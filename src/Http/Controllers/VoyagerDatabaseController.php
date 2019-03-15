@@ -88,7 +88,7 @@ class VoyagerDatabaseController extends Controller
                     $params['--migration'] = true;
                 }
                 if (isset($request->create_translation) && $request->create_translation == 'on') {
-                    $params['--translation'] = true;
+                    $params['--translation'] = $table->getColumns();
                 }
                 Artisan::call('voyager:make:model', $params);
             }

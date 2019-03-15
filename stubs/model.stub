@@ -10,4 +10,8 @@ class DummyClass extends Model
 {
     //DummySDTrait
     //DummyySDTraitTranslatable
+
+
+    //DummyySDTraitColumns
+
 }

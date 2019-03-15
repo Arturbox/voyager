@@ -77,15 +77,21 @@ class MakeModelCommand extends ModelMakeCommand
      */
     protected function addTranslation(&$stub)
     {
-        $traitIncl = $trait = '';
-
+        $traitIncl = $trait = $traitColumns = '';
         if ($this->option('translation')) {
             $traitIncl = 'use TCG\Voyager\Traits\Translatable;';
             $trait = 'use Translatable;';
+            $traitColumns = 'protected $translatable = [';
+            foreach ($this->option('translation') as $column){
+                if (in_array($column->getType()->getName(),['varchar'])){
+                    $traitColumns .= '"'.$column->getName().'",';
+                }
+            }
+            $traitColumns .= '];';
         }
         $stub = str_replace('//DummyySDTraitIncludeTranslatable', $traitIncl, $stub);
         $stub = str_replace('//DummyySDTraitTranslatable', $trait, $stub);
-
+        $stub = str_replace('//DummyySDTraitColumns', $traitColumns, $stub);
         return $this;
     }
 
