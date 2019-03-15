@@ -42,7 +42,7 @@ class MakeModelCommand extends ModelMakeCommand
     {
         $stub = $this->files->get($this->getStub());
 
-        return $this->addSoftDelete($stub)->replaceNamespace($stub, $name)->replaceClass($stub, $name);
+        return $this->addSoftDelete($stub)->addTranslation($stub)->replaceNamespace($stub, $name)->replaceClass($stub, $name);
     }
 
     /**
@@ -67,6 +67,30 @@ class MakeModelCommand extends ModelMakeCommand
         return $this;
     }
 
+
+    /**
+     * Add translation to the given stub.
+     *
+     * @param string $stub
+     *
+     * @return $this
+     */
+    protected function addTranslation(&$stub)
+    {
+        $traitIncl = $trait = '';
+
+        if ($this->option('translation')) {
+            $traitIncl = 'use TCG\Voyager\Traits\Translatable;';
+            $trait = 'use Translatable;';
+        }
+        $stub = str_replace('//DummyySDTraitIncludeTranslatable', $traitIncl, $stub);
+        $stub = str_replace('//DummyySDTraitTranslatable', $trait, $stub);
+
+        return $this;
+    }
+
+
+
     /**
      * Get the console command options.
      *
@@ -76,6 +100,7 @@ class MakeModelCommand extends ModelMakeCommand
     {
         $options = [
             ['softdelete', 'd', InputOption::VALUE_NONE, 'Add soft-delete field to Model'],
+            ['translation', 'e', InputOption::VALUE_NONE, 'Add translation field to Model'],
         ];
 
         return array_merge($options, parent::getOptions());

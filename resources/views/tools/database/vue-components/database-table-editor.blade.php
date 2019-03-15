@@ -6,26 +6,27 @@
         @if($db->action == 'update')
             <div class="col-md-12">
         @else
-            <div class="col-md-6">
+            <div class="col-md-3">
         @endif
                 <label for="name">{{ __('voyager::database.table_name') }}</label><br>
                 <input v-model.trim="table.name" type="text" class="form-control" placeholder="{{ __('voyager::database.table_name') }}" required pattern="{{ $db->identifierRegex }}">
             </div>
-
         @if($db->action == 'create')
-            <div class="col-md-3 col-sm-4 col-xs-6">
+            <div class="col-md-3 col-sm-4 col-xs-4">
                 <label for="create_model">{{ __('voyager::database.create_model_table') }}</label><br>
-                <input type="checkbox" name="create_model" data-toggle="toggle"
+                <input  onchange="document.getElementById('create_translation').disabled = !this.checked;"  type="checkbox" name="create_model" data-toggle="toggle"
                        data-on="{{ __('voyager::generic.yes_please') }}" data-off="{{ __('voyager::generic.no_thanks') }}">
             </div>
-            {{--
-                Hide migration button until feature is available.
-                 <div class="col-md-3 col-sm-4 col-xs-6">
-                    <label for="create_migration">{{ __('voyager::database.create_migration') }}</label><br>
-                    <input disabled type="checkbox" name="create_migration" data-toggle="toggle"
+            <div class="col-md-3 col-sm-4 col-xs-4">
+                 <label for="create_migration">{{ __('voyager::database.create_migration') }}</label><br>
+                 <input type="checkbox" name="create_migration" data-toggle="toggle"
                            data-on="{{ __('voyager::generic.yes_please') }}" data-off="{{ __('voyager::generic.no_thanks') }}">
-                </div>
-            --}}
+            </div>
+            <div class="col-md-3 col-sm-4 col-xs-4">
+                <label for="create_translation">{{ __('voyager::database.create_translation') }}</label><br>
+                <input id="create_translation" type="checkbox" name="create_translation" data-toggle="toggle"
+                       data-on="{{ __('voyager::generic.yes_please') }}" data-off="{{ __('voyager::generic.no_thanks') }}">
+            </div>
         @endif
         </div><!-- .panel-body .row -->
 

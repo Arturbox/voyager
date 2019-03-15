@@ -14,6 +14,8 @@ return [
     'create_new_table'          => 'Create New Table',
     'create_your_new_table'     => 'Create Your New Table',
     'create_model_table'        => 'Create model for this table?',
+    'create_migration'          => 'Create migration for this table?',
+    'create_translation'        => 'Create translation for this table?',
     'default'                   => 'Default',
     'delete_bread_before_table' => 'Please make sure to remove the BREAD on this table before deleting the table.',
     'delete_table_confirm'      => 'Yes, delete this table',

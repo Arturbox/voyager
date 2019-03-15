@@ -68,7 +68,6 @@ class VoyagerDatabaseController extends Controller
         try {
             $conn = 'database.connections.'.config('database.default');
             Type::registerCustomPlatformTypes();
-
             $table = $request->table;
             if (!is_array($request->table)) {
                 $table = json_decode($request->table, true);
@@ -77,31 +76,29 @@ class VoyagerDatabaseController extends Controller
             $table['options']['charset'] = config($conn.'.charset', 'utf8mb4');
             $table = Table::make($table);
             SchemaManager::createTable($table);
-
             if (isset($request->create_model) && $request->create_model == 'on') {
                 $modelNamespace = config('voyager.models.namespace', app()->getNamespace());
                 $params = [
                     'name' => $modelNamespace.Str::studly(Str::singular($table->name)),
                 ];
-
-                // if (in_array('deleted_at', $request->input('field.*'))) {
-                //     $params['--softdelete'] = true;
-                // }
-
+                if ($table->hasColumn('deleted_at')) {
+                    $params['--softdelete'] = true;
+                }
                 if (isset($request->create_migration) && $request->create_migration == 'on') {
                     $params['--migration'] = true;
                 }
-
+                if (isset($request->create_translation) && $request->create_translation == 'on') {
+                    $params['--translation'] = true;
+                }
                 Artisan::call('voyager:make:model', $params);
-            } elseif (isset($request->create_migration) && $request->create_migration == 'on') {
+            }
+            elseif (isset($request->create_migration) && $request->create_migration == 'on') {
                 Artisan::call('make:migration', [
                     'name'    => 'create_'.$table->name.'_table',
                     '--table' => $table->name,
                 ]);
             }
-
             event(new TableAdded($table));
-
             return redirect()
                ->route('voyager.database.index')
                ->with($this->alertSuccess(__('voyager::database.success_create_table', ['table' => $table->name])));
