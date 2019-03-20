@@ -5,13 +5,21 @@ namespace DummyNamespace;
 use Illuminate\Database\Eloquent\Model;
 //DummySDTraitInclude
 //DummyySDTraitIncludeTranslatable
+//DummyyySDTraitIncludeActivitylog
 
 class DummyClass extends Model
 {
     //DummySDTrait
     //DummyySDTraitTranslatable
+    //DummyyySDTraitActivitylogs
 
 
-    //DummyySDTraitColumns
+    //DummyySDTraitTranslatablColumns
+
+    //DummyyySDTraitActivitylogAttributes
+
+    //DummyyySDTraitActivitylogName
+
+
 
 }

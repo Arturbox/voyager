@@ -42,7 +42,7 @@ class MakeModelCommand extends ModelMakeCommand
     {
         $stub = $this->files->get($this->getStub());
 
-        return $this->addSoftDelete($stub)->addTranslation($stub)->replaceNamespace($stub, $name)->replaceClass($stub, $name);
+        return $this->addSoftDelete($stub)->addTranslation($stub)->addLog($stub)->replaceNamespace($stub, $name)->replaceClass($stub, $name);
     }
 
     /**
@@ -83,7 +83,7 @@ class MakeModelCommand extends ModelMakeCommand
             $trait = 'use Translatable;';
             $traitColumns = 'protected $translatable = [';
             foreach ($this->option('translation') as $column){
-                if (in_array($column->getType()->getName(),['varchar'])){
+                if (in_array($column->getType()->getName(),['varchar','text','tinytext','mediumtext','longtext'])){
                     $traitColumns .= '"'.$column->getName().'",';
                 }
             }
@@ -91,9 +91,40 @@ class MakeModelCommand extends ModelMakeCommand
         }
         $stub = str_replace('//DummyySDTraitIncludeTranslatable', $traitIncl, $stub);
         $stub = str_replace('//DummyySDTraitTranslatable', $trait, $stub);
-        $stub = str_replace('//DummyySDTraitColumns', $traitColumns, $stub);
+        $stub = str_replace('//DummyySDTraitTranslatablColumns', $traitColumns, $stub);
         return $this;
     }
+
+
+    /**
+     * Add Activity log to the given stub.
+     *
+     * @param string $stub
+     *
+     * @return $this
+     */
+    protected function addLog(&$stub)
+    {
+
+        $traitIncl = 'use Spatie\Activitylog\Traits\LogsActivity;';
+        $trait = 'use LogsActivity;';
+        $traitAttributes = 'protected static $logAttributes = [';
+        $traitLogName = 'protected static $logName = "'.$this->option('log')['name'].'";';
+        foreach ($this->option('log')['fields'] as $column){
+            if (in_array($column->getType()->getName(),['varchar','text','tinytext','mediumtext','longtext','integer'])){
+                $traitAttributes .= '"' . $column->getName() . '",';
+            }
+        }
+        $traitAttributes .= '];';
+        $stub = str_replace('//DummyyySDTraitIncludeActivitylog', $traitIncl, $stub);
+        $stub = str_replace('//DummyyySDTraitActivitylogs', $trait, $stub);
+        $stub = str_replace('//DummyyySDTraitActivitylogAttributes', $traitAttributes, $stub);
+        $stub = str_replace('//DummyyySDTraitActivitylogName', $traitLogName, $stub);
+        return $this;
+    }
+
+
+
 
 
 
@@ -106,7 +137,8 @@ class MakeModelCommand extends ModelMakeCommand
     {
         $options = [
             ['softdelete', 'd', InputOption::VALUE_NONE, 'Add soft-delete field to Model'],
-            ['translation', 'e', InputOption::VALUE_NONE, 'Add translation field to Model'],
+            ['translation', 'e', InputOption::VALUE_NONE, 'Add translation to Model'],
+            ['log', 'g', InputOption::VALUE_NONE, 'Add activity log to Model'],
         ];
 
         return array_merge($options, parent::getOptions());

@@ -81,6 +81,7 @@ class VoyagerDatabaseController extends Controller
                 $params = [
                     'name' => $modelNamespace.Str::studly(Str::singular($table->name)),
                 ];
+                $tableColumns = $table->getColumns();
                 if ($table->hasColumn('deleted_at')) {
                     $params['--softdelete'] = true;
                 }
@@ -88,8 +89,12 @@ class VoyagerDatabaseController extends Controller
                     $params['--migration'] = true;
                 }
                 if (isset($request->create_translation) && $request->create_translation == 'on') {
-                    $params['--translation'] = $table->getColumns();
+                    $params['--translation'] = $tableColumns;
                 }
+                //Activity Log
+                $params['--log']['name'] =$table->getName();
+                $params['--log']['fields'] = $tableColumns;
+
                 Artisan::call('voyager:make:model', $params);
             }
             elseif (isset($request->create_migration) && $request->create_migration == 'on') {
