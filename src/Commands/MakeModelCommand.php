@@ -108,14 +108,8 @@ class MakeModelCommand extends ModelMakeCommand
 
         $traitIncl = 'use Spatie\Activitylog\Traits\LogsActivity;';
         $trait = 'use LogsActivity;';
-        $traitAttributes = 'protected static $logAttributes = [';
+        $traitAttributes = 'protected static $logAttributes = ["*"];';
         $traitLogName = 'protected static $logName = "'.$this->option('log')['name'].'";';
-        foreach ($this->option('log')['fields'] as $column){
-            if (in_array($column->getType()->getName(),['varchar','text','tinytext','mediumtext','longtext','integer'])){
-                $traitAttributes .= '"' . $column->getName() . '",';
-            }
-        }
-        $traitAttributes .= '];';
         $stub = str_replace('//DummyyySDTraitIncludeActivitylog', $traitIncl, $stub);
         $stub = str_replace('//DummyyySDTraitActivitylogs', $trait, $stub);
         $stub = str_replace('//DummyyySDTraitActivitylogAttributes', $traitAttributes, $stub);
