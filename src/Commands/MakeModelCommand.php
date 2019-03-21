@@ -42,7 +42,7 @@ class MakeModelCommand extends ModelMakeCommand
     {
         $stub = $this->files->get($this->getStub());
 
-        return $this->addSoftDelete($stub)->addTranslation($stub)->addLog($stub)->replaceNamespace($stub, $name)->replaceClass($stub, $name);
+        return $this->addSoftDelete($stub)->addTranslation($stub)->replaceNamespace($stub, $name)->replaceClass($stub, $name);
     }
 
     /**
@@ -95,33 +95,6 @@ class MakeModelCommand extends ModelMakeCommand
         return $this;
     }
 
-
-    /**
-     * Add Activity log to the given stub.
-     *
-     * @param string $stub
-     *
-     * @return $this
-     */
-    protected function addLog(&$stub)
-    {
-
-        $traitIncl = 'use Spatie\Activitylog\Traits\LogsActivity;';
-        $trait = 'use LogsActivity;';
-        $traitAttributes = 'protected static $logAttributes = ["*"];';
-        $traitLogName = 'protected static $logName = "'.$this->option('log')['name'].'";';
-        $stub = str_replace('//DummyyySDTraitIncludeActivitylog', $traitIncl, $stub);
-        $stub = str_replace('//DummyyySDTraitActivitylogs', $trait, $stub);
-        $stub = str_replace('//DummyyySDTraitActivitylogAttributes', $traitAttributes, $stub);
-        $stub = str_replace('//DummyyySDTraitActivitylogName', $traitLogName, $stub);
-        return $this;
-    }
-
-
-
-
-
-
     /**
      * Get the console command options.
      *
@@ -131,8 +104,7 @@ class MakeModelCommand extends ModelMakeCommand
     {
         $options = [
             ['softdelete', 'd', InputOption::VALUE_NONE, 'Add soft-delete field to Model'],
-            ['translation', 'e', InputOption::VALUE_NONE, 'Add translation to Model'],
-            ['log', 'g', InputOption::VALUE_NONE, 'Add activity log to Model'],
+            ['translation', 'e', InputOption::VALUE_NONE, 'Add translation to Model']
         ];
 
         return array_merge($options, parent::getOptions());

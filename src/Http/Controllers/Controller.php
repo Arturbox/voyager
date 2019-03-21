@@ -121,6 +121,13 @@ abstract class Controller extends BaseController
             $data->belongsToMany($sync_data['model'], $sync_data['table'])->sync($sync_data['content']);
         }
 
+        //add saving data in activity log data
+        activity($slug)
+            ->performedOn($data)
+            ->causedBy(\Auth::user())
+            ->withProperties(['data'=>$data->getAttributes(),'relations'=>$multi_select])
+            ->log($request->getMethod());
+
         return $data;
     }
 

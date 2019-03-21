@@ -367,12 +367,22 @@ class VoyagerBaseController extends Controller
         }
         foreach ($ids as $id) {
             $data = call_user_func([$dataType->model_name, 'findOrFail'], $id);
+            $activity_data[] = $data->getAttributes();
             $this->cleanup($dataType, $data);
         }
 
         $displayName = count($ids) > 1 ? $dataType->display_name_plural : $dataType->display_name_singular;
 
         $res = $data->destroy($ids);
+
+        if ($res)
+            //add deleting data in activity log data
+            activity($slug)
+                ->performedOn($data)
+                ->causedBy(\Auth::user())
+                ->withProperties(['data'=>$activity_data])
+                ->log($request->getMethod());
+
         $data = $res
             ? [
                 'message'    => __('voyager::generic.successfully_deleted')." {$displayName}",

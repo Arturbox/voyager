@@ -91,9 +91,6 @@ class VoyagerDatabaseController extends Controller
                 if (isset($request->create_translation) && $request->create_translation == 'on') {
                     $params['--translation'] = $tableColumns;
                 }
-                //Activity Log
-                $params['--log']['name'] =$table->getName();
-                $params['--log']['fields'] = $tableColumns;
 
                 Artisan::call('voyager:make:model', $params);
             }
