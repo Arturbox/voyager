@@ -27,9 +27,31 @@
                     <div style="clear:both"></div>
                 </div>
             </div>
-
         </div>
-
+        <ul class="nav navbar-nav">
+            <li class="dropdown">
+                <a href="#5-dropdown-element" data-toggle="collapse" aria-expanded="false" target="_self" style="color:">
+                    <span class="icon voyager-tools"></span>
+                    <span class="title">{{ trans('languages.'. App::getLocale()) }}</span>
+                </a>
+                <div id="5-dropdown-element" class="panel-collapse collapse ">
+                    <div class="panel-body">
+                        <ul class="nav navbar-nav">
+                            @foreach (config('voyager.multilingual.locales') as $language)
+                                @if ($language != App::getLocale())
+                                    <li class="">
+                                        <a href="{{ route('langroute', $language) }}" target="_self" style="color:">
+                                            <span class="icon voyager-compass"></span>
+                                            <span class="title">{{ trans('languages.'. $language) }}</span>
+                                        </a>
+                                    </li>
+                                @endif
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </li>
+        </ul>
         {!! menu('admin', 'admin_menu') !!}
     </nav>
 </div>
