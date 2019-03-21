@@ -30,11 +30,11 @@
         </div>
         <ul class="nav navbar-nav">
             <li class="dropdown">
-                <a href="#5-dropdown-element" data-toggle="collapse" aria-expanded="false" target="_self" style="color:">
+                <a href="#5-dropdown-lang" data-toggle="collapse" aria-expanded="false" target="_self" style="color:">
                     <span class="icon voyager-tools"></span>
                     <span class="title">{{ trans('languages.'. App::getLocale()) }}</span>
                 </a>
-                <div id="5-dropdown-element" class="panel-collapse collapse ">
+                <div id="5-dropdown-lang" class="panel-collapse collapse ">
                     <div class="panel-body">
                         <ul class="nav navbar-nav">
                             @foreach (config('voyager.multilingual.locales') as $language)
