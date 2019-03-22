@@ -8,12 +8,17 @@
             <i class="{{ $dataType->icon }}"></i> {{ $dataType->display_name_plural }}
         </h1>
         @can('add', app($dataType->model_name))
-            <a href="{{ route('voyager.'.$dataType->slug.'.create') }}" class="btn btn-success btn-add-new">
+            <a href="{{ route('voyager.'.$dataType->slug.'.create') }}" class="btn btn-success btn-repeat">
                 <i class="voyager-plus"></i> <span>{{ __('voyager::generic.add_new') }}</span>
             </a>
         @endcan
         @can('delete', app($dataType->model_name))
             @include('voyager::partials.bulk-delete')
+        @endcan
+        @can('restore', app($dataType->model_name))
+            <a href="{{ route('voyager.'.$dataType->slug.'.restore') }}" class="btn btn-warning">
+                <i class="glyphicon glyphicon-repeat"></i> <span>{{ __('voyager::generic.restore') }}</span>
+            </a>
         @endcan
         @can('edit', app($dataType->model_name))
             @if(isset($dataType->order_column) && isset($dataType->order_display_column))
@@ -231,6 +236,35 @@
             </div><!-- /.modal-content -->
         </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->
+
+
+    {{-- Single restore modal --}}
+    <div class="modal modal-danger fade" tabindex="-1" id="restore_modal" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="{{ __('voyager::generic.close') }}"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title"><i class="voyager-trash"></i> {{ __('voyager::generic.restore_question') }} {{ strtolower($dataType->display_name_singular) }}?</h4>
+                </div>
+                <div class="modal-footer">
+                    <form action="#" id="restore_form" method="POST">
+                        {{ method_field('POST') }}
+                        {{ csrf_field() }}
+                        <input name="restore" type="hidden" value="">
+                        <input type="submit" class="btn btn-danger pull-right restore-confirm" value="{{ __('voyager::generic.restore_confirm') }}">
+                    </form>
+                    <button type="button" class="btn btn-default pull-right" data-dismiss="modal">{{ __('voyager::generic.cancel') }}</button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+
+
+
+
+
+
 @stop
 
 @section('css')
@@ -278,6 +312,12 @@
         $('td').on('click', '.delete', function (e) {
             $('#delete_form')[0].action = '{{ route('voyager.'.$dataType->slug.'.destroy', ['id' => '__id']) }}'.replace('__id', $(this).data('id'));
             $('#delete_modal').modal('show');
+        });
+        var restoreFormAction;
+        $('td').on('click', '.restore', function (e) {
+            $('#restore_form')[0].action = '{{ route('voyager.'.$dataType->slug.'.restore') }}';
+            $('#restore_form').children('input[name="restore"]').val($(this).data('id'));
+            $('#restore_modal').modal('show');
         });
     </script>
 @stop

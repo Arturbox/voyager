@@ -173,6 +173,17 @@ class Voyager
         array_push($this->actions, $action);
     }
 
+    public function removeAction($action)
+    {
+        if (($key = array_search($action, $this->actions)) !== false) {
+            unset( $this->actions[$key]);
+        }
+    }
+    public function removeAllActions()
+    {
+        $this->actions = [];
+    }
+
     public function replaceAction($actionToReplace, $action)
     {
         $key = array_search($actionToReplace, $this->actions);
