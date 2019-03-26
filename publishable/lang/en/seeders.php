@@ -53,6 +53,10 @@ return [
             'singular' => 'User',
             'plural'   => 'Users',
         ],
+        'log'     => [
+            'singular' => 'Log',
+            'plural'   => 'Logs',
+        ],
     ],
     'menu_items' => [
         'bread'        => 'BREAD',
@@ -68,10 +72,11 @@ return [
         'settings'     => 'Settings',
         'tools'        => 'Tools',
         'users'        => 'Users',
+        'logs'         => 'Logs'
     ],
     'roles'      => [
         'admin' => 'Administrator',
-        'user'  => 'Normal User',
+        'user'  => 'voyager::seeders.menu_items.Normal User',
     ],
     'settings'   => [
         'admin' => [

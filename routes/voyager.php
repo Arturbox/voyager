@@ -52,6 +52,8 @@ Route::group(['as' => 'voyager.'], function () {
             // do nothing, might just be because table not yet migrated.
         }
 
+        //Activity Logs
+        Route::resource('logs', $namespacePrefix.'VoyagerLogController');
         // Role Routes
         Route::resource('roles', $namespacePrefix.'VoyagerRoleController');
 
@@ -130,7 +132,6 @@ Route::group(['as' => 'voyager.'], function () {
             Route::get('/', ['uses' => $namespacePrefix.'VoyagerCompassController@index',  'as' => 'index']);
             Route::post('/', ['uses' => $namespacePrefix.'VoyagerCompassController@index',  'as' => 'post']);
         });
-
         event(new RoutingAdminAfter());
     });
     event(new RoutingAfter());
