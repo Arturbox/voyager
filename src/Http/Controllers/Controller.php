@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Storage;
 use TCG\Voyager\Events\FileDeleted;
+use TCG\Voyager\FormFields\TablesConnectionHandler;
 use TCG\Voyager\Http\Controllers\ContentTypes\Checkbox;
 use TCG\Voyager\Http\Controllers\ContentTypes\Coordinates;
 use TCG\Voyager\Http\Controllers\ContentTypes\File;
@@ -188,6 +189,9 @@ abstract class Controller extends BaseController
             /********** PASSWORD TYPE **********/
             case 'password':
                 return (new Password($request, $slug, $row, $options))->handle();
+            /********** tables_connection TYPE **********/
+            case 'tables_connection':
+                return (new TablesConnectionHandler($request, $slug, $row, $options))->handle();
             /********** CHECKBOX TYPE **********/
             case 'checkbox':
                 return (new Checkbox($request, $slug, $row, $options))->handle();

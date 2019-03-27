@@ -22,6 +22,8 @@ class Permission extends Model
         self::firstOrCreate(['key' => 'add_'.$table_name, 'table_name' => $table_name]);
         self::firstOrCreate(['key' => 'delete_'.$table_name, 'table_name' => $table_name]);
         self::firstOrCreate(['key' => 'restore_'.$table_name, 'table_name' => $table_name]);
+        if ($table_name=='logs')
+            self::firstOrCreate(['key' => 'restoreLog_'.$table_name, 'table_name' => $table_name]);
     }
 
     public static function removeFrom($table_name)
