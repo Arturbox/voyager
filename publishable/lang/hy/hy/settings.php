@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'usage_help'           => 'Դուք կարող եք  can get the value of each setting anywhere on your site by calling',
+    'save'                 => 'Պահպանել  կարգավորումենրը',
+    'new'                  => 'Նոր կարգավորում',
+    'help_name'            => 'Կարգավորման անվանման օրինակ: Admin Title',
+    'help_key'             => 'Կարգավորման բանալի ex: admin_title',
+    'help_option'          => '(optional, only applies to certain types like dropdown box or radio button)',
+    'add_new'              => 'Ավելացնել Նոր  New Setting',
+    'delete_question'      => 'Դուք վստա՞հ եք, որ ցանկանում եք ջնջել կարգավորումենրը:',
+    'delete_confirm'       => 'Այո, հեռացնել այս կարգավորումը:',
+    'successfully_created' => 'Հաջողությամբ ստեղծված կարգավորումենր',
+    'successfully_saved'   => 'Հաջողությամբ պահպանված կարգավորումենր',
+    'successfully_deleted' => 'Հաջողությամբ ջնջված կարգավորումենր',
+    'already_at_top'       => 'Սա արդեն  is already at the top of the list',
+    'already_at_bottom'    => 'Սա արդեն Ձեր ցուցակում է:',
+    'key_already_exists'   => 'Բանալի:բանալին արդեն գոյություն ունի',
+    'moved_order_up'       => 'Տեղաշարժել :name setting order up',
+    'moved_order_down'     => 'Տեղաշարժել :name setting order down',
+    'successfully_removed' => 'Հաջողությամբ հեռացված է :անվանման արժեք value',
+    'group_general'        => 'Ընդհանուր',
+    'group_admin'          => 'Ադմին',
+    'group_site'           => 'Կայք',
+    'group'                => 'Խումբ',
+    'help_group'           => 'Group this setting is assigned to',
+];
