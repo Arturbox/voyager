@@ -18,6 +18,7 @@ use TCG\Voyager\Events\TableDeleted;
 use TCG\Voyager\Events\TableUpdated;
 use TCG\Voyager\Facades\Voyager;
 use TCG\Voyager\Models\DataType;
+use App\Helpers\Files;
 
 class VoyagerDatabaseController extends Controller
 {
@@ -149,13 +150,16 @@ class VoyagerDatabaseController extends Controller
             // TODO: synch BREAD with Table
             // $this->cleanOldAndCreateNew($request->original_name, $request->name);
             event(new TableUpdated($table));
+            $files = new Files();
+            $files->rename_migration($files->getAllMigrations(),['oldName' => $table['oldName'],'name' => $table['name']]);
+            $files->rename_model($files->getAllModels(),['oldName' => $table['oldName'],'name' => $table['name']]);
         } catch (Exception $e) {
             return back()->with($this->alertException($e))->withInput();
         }
 
         return redirect()
-               ->route('voyager.database.index')
-               ->with($this->alertSuccess(__('voyager::database.success_create_table', ['table' => $table['name']])));
+            ->route('voyager.database.index')
+            ->with($this->alertSuccess(__('voyager::database.success_create_table', ['table' => $table['name']])));
     }
 
     protected function prepareDbManager($action, $table = '')
@@ -268,6 +272,9 @@ class VoyagerDatabaseController extends Controller
         try {
             SchemaManager::dropTable($table);
             event(new TableDeleted($table));
+            $files = new Files();
+            $files->clear_migration_after_table_delete($files->getAllMigrations(),$table);
+            $files->clear_model_after_table_delete($files->getAllModels(),$table);
 
             return redirect()
                 ->route('voyager.database.index')
