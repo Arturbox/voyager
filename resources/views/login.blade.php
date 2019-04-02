@@ -80,7 +80,7 @@
                             <input type="password" name="password" placeholder="{{ __('voyager::generic.password') }}" class="form-control" required>
                         </div>
                     </div>
-
+                    {!! Recaptcha::render([ 'lang' => 'hy' ]); !!}
                     <button type="submit" class="btn btn-block login-button">
                         <span class="signingin hidden"><span class="voyager-refresh"></span> {{ __('voyager::login.loggingin') }}...</span>
                         <span class="signin">{{ __('voyager::generic.login') }}</span>
