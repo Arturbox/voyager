@@ -54,6 +54,7 @@ Route::group(['as' => 'voyager.'], function () {
 
         //Activity Logs
         Route::resource('logs', $namespacePrefix.'VoyagerLogController');
+        Route::post('logs/restoreLog', $namespacePrefix.'VoyagerLogController@restoreLog')->name('logs.restoreLog');
         // Role Routes
         Route::resource('roles', $namespacePrefix.'VoyagerRoleController');
 

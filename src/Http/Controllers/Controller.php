@@ -126,7 +126,7 @@ abstract class Controller extends BaseController
         activity($slug)
             ->performedOn($data)
             ->causedBy(\Auth::user())
-            ->withProperties(['data'=>$data->getAttributes(),'relations'=>$multi_select])
+            ->withProperties($request->all())
             ->log($request->getMethod());
 
         return $data;
@@ -247,4 +247,99 @@ abstract class Controller extends BaseController
             return !empty($value->details->validation->rule);
         });
     }
+
+
+
+
+    public function restoreDataLog($request, $slug, $dataType, $data)
+    {
+        $multi_select = [];
+
+        $dataTypeSection = \Voyager::model('DataType')->where('model_name', '=', $data->subject_type)->first();
+
+        $dataSection = call_user_func([$dataTypeSection->model_name, 'findOrFail'], $data->subject_id);
+
+        $dataSectionLogContent = json_decode($data->properties);
+
+        $dataSectionRequest = clone $request;
+
+        $dataSectionRequest->request->add((array)$dataSectionLogContent,true);
+
+        $dataSectionRequest->request->remove('restoreLog');
+
+        foreach ($dataTypeSection->editRows as $row) {
+            // if the field for this row is absent from the request, continue
+            // checkboxes will be absent when unchecked, thus they are the exception
+            if (!$dataSectionRequest->hasFile($row->field) && !$dataSectionRequest->has($row->field) && $row->type !== 'checkbox') {
+                // if the field is a belongsToMany relationship, don't remove it
+                // if no content is provided, that means the relationships need to be removed
+                if (isset($row->details->type) && $row->details->type !== 'belongsToMany') {
+                    continue;
+                }
+            }
+
+            $content = $this->getContentBasedOnType($dataSectionRequest, $dataTypeSection->slug, $row, $row->details);
+
+            if ($row->type == 'relationship' && $row->details->type != 'belongsToMany') {
+                $row->field = @$row->details->column;
+            }
+
+            /*
+             * merge ex_images and upload images
+             */
+            if ($row->type == 'multiple_images' && !is_null($content)) {
+                if (isset($dataSection->{$row->field})) {
+                    $ex_files = json_decode($dataSection->{$row->field}, true);
+                    if (!is_null($ex_files)) {
+                        $content = json_encode(array_merge($ex_files, json_decode($content)));
+                    }
+                }
+            }
+
+            if (is_null($content)) {
+
+                // If the image upload is null and it has a current image keep the current image
+                if ($row->type == 'image' && is_null($dataSectionRequest->input($row->field)) && isset($dataSection->{$row->field})) {
+                    $content = $dataSection->{$row->field};
+                }
+
+                // If the multiple_images upload is null and it has a current image keep the current image
+                if ($row->type == 'multiple_images' && is_null($dataSectionRequest->input($row->field)) && isset($dataSection->{$row->field})) {
+                    $content = $dataSection->{$row->field};
+                }
+
+                // If the file upload is null and it has a current file keep the current file
+                if ($row->type == 'file') {
+                    $content = $dataSection->{$row->field};
+                }
+
+                if ($row->type == 'password') {
+                    $content = $dataSection->{$row->field};
+                }
+            }
+
+            if ($row->type == 'relationship' && $row->details->type == 'belongsToMany') {
+                // Only if select_multiple is working with a relationship
+                $multi_select[] = ['model' => $row->details->model, 'content' => $dataSectionLogContent->{$row->field}, 'table' => $row->details->pivot_table];
+
+            } else {
+                $dataSection->{$row->field} = $content;
+            }
+
+        }
+
+
+        $dataSection->save();
+
+        foreach ($multi_select as $sync_data) {
+            $dataSection->belongsToMany($sync_data['model'], $sync_data['table'])->sync($sync_data['content']);
+        }
+
+        return $dataSection;
+    }
+
+
+
+
+
 }

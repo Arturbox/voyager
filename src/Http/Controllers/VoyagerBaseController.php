@@ -368,7 +368,6 @@ class VoyagerBaseController extends Controller
         }
         foreach ($ids as $id) {
             $data = call_user_func([$dataType->model_name, 'findOrFail'], $id);
-            $activity_data[] = $data->getAttributes();
             $this->cleanup($dataType, $data);
         }
 
@@ -381,7 +380,7 @@ class VoyagerBaseController extends Controller
             activity($slug)
                 ->performedOn($data)
                 ->causedBy(\Auth::user())
-                ->withProperties(['data'=>$activity_data])
+                ->withProperties($request->all())
                 ->log($request->getMethod());
 
         $data = $res
@@ -656,7 +655,6 @@ class VoyagerBaseController extends Controller
 
         foreach ($ids as $id) {
             $data = call_user_func([$dataType->model_name, 'findorFail'], $id);
-            $activity_data[] = $data->getAttributes();
         }
 
         if ($res)
@@ -664,7 +662,7 @@ class VoyagerBaseController extends Controller
             activity($slug)
                 ->performedOn($data)
                 ->causedBy(\Auth::user())
-                ->withProperties(['data'=>$activity_data])
+                ->withProperties($request->all())
                 ->log($request->getMethod());
 
         $data = $res

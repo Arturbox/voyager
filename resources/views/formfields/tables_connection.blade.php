@@ -49,8 +49,8 @@
             </div>
 
             @foreach($dataType->browseRows->where('type','text') as $column)
-                @if($column->type == 'text' && isset($content->data->{$column->field}))
-                    @if(is_object($content->data->{$column->field}) || is_array($content->data->{$column->field}))@continue;@endif
+                @if($column->type == 'text' && isset($content->{$column->field}))
+                    @if(is_object($content->{$column->field}) || is_array($content->{$column->field}))@continue;@endif
                      <div class="row">
                         <div class="col-xs-5 text-center ">
                             <p class="bg-success">{{$column->field}}</p>
@@ -60,13 +60,14 @@
                         </div>
                         <div class="col-xs-5 text-center">
                             <div class="row">
-                                <div class="col-md-12 tbl_relations_main_wr">{{$content->data->{$column->field} }}
+                                <div class="col-md-12 tbl_relations_main_wr">{{$content->{$column->field} }}
                                 </div>
                             </div>
                         </div>
                     </div>
                     @endif
             @endforeach
+
         </div>
         <div class="col-md-6 tbl_relations_main_wr">
             @foreach($dataType->browseRows->where('type','relationship') as $column)
@@ -79,15 +80,11 @@
                     </div>
                     <div class="tbl_relations_wrapper">
                         @if($column->details->type == 'belongsToMany')
-                            @foreach($content->relations as $data)
-                                @if($data->model == $DataTypeRelation->model_name)
-                                    @foreach($data->content as $id)
-                                        <span class="well well-sm tbl_relations">{{$DataTypeRelation->model_name::where('id',$id)->first()[$column->details->label]}}</span>
-                                    @endforeach
-                                @endif
+                            @foreach($content->{$column->field} as $id)
+                                <span class="well well-sm tbl_relations">{{$DataTypeRelation->model_name::where('id',$id)->first()[$column->details->label]}}</span>
                             @endforeach
                         @elseif($column->details->type == 'belongsTo')
-                            {{$column->details->model::where('id',$content->data->{$column->details->column})->first()[$column->details->label]}}
+                            {{$column->details->model::where('id',$content->{$column->details->column})->first()[$column->details->label]}}
                         @endif
 
                     </div>
