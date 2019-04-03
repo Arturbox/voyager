@@ -20,3 +20,17 @@ if (!function_exists('voyager_asset')) {
         return asset(config('voyager.assets_path').'/'.$path, $secure);
     }
 }
+
+if (!function_exists('getAllModels')) {
+    function getAllModels(){
+        try {
+            return collect(File::allFiles(base_path(config('voyager.models.namespace', app()->getNamespace()))))->map(function($contact)  {
+                $contact->fullPath = config('voyager.models.namespace', app()->getNamespace()).substr($contact->getFilename(),0,-4);;
+                return $contact;
+            });
+        } catch (Exception $e) {
+            return back()->with($this->alertException($e, __('voyager::generic.update_failed')));
+        }
+
+    }
+}
