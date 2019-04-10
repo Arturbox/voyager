@@ -1,25 +1,32 @@
 <?php
+/**
+ * Created by PhpStorm.
+ * User: User
+ * Date: 3/28/2019
+ * Time: 2:37 PM
+ */
+
 
 namespace TCG\Voyager\Commands;
 
-use Illuminate\Foundation\Console\ModelMakeCommand;
+use Illuminate\Database\Console\Migrations\MigrateMakeCommand;
 use Symfony\Component\Console\Input\InputOption;
 
-class MakeModelCommand extends ModelMakeCommand
+class MakeMigrationCommand extends MigrateMakeCommand
 {
     /**
      * The console command name.
      *
      * @var string
      */
-    protected $name = 'voyager:make:model';
+    protected $name = 'voyager:make:migration';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Create a new Voyager model class';
+    protected $description = 'Create a new Voyager migration class';
 
     /**
      * Get the stub file for the generator.
@@ -28,7 +35,7 @@ class MakeModelCommand extends ModelMakeCommand
      */
     protected function getStub()
     {
-        return __DIR__.'/../../stubs/model.stub';
+        return __DIR__.'/../../stubs/migration.stub';
     }
 
     /**
@@ -41,11 +48,8 @@ class MakeModelCommand extends ModelMakeCommand
     protected function buildClass($name)
     {
         $stub = $this->files->get($this->getStub());
-//        Artisan::call('make:migration', [
-//            'name'    => 'create_'.$table->name.'_table',
-//            '--table' => $table->name,
-//        ]);
-        return $this->addSoftDelete($stub)->addTranslation($stub)->replaceNamespace($stub, $name)->replaceClass($stub, $name);
+        dd($name);
+        return $this->addTranslation($stub)->replaceNamespace($stub, $name)->replaceClass($stub, $name);
     }
 
     /**
@@ -105,10 +109,7 @@ class MakeModelCommand extends ModelMakeCommand
      */
     protected function getOptions()
     {
-        $options = [
-            ['softdelete', 'd', InputOption::VALUE_NONE, 'Add soft-delete field to Model'],
-            ['translation', 'e', InputOption::VALUE_NONE, 'Add translation to Model']
-        ];
+        $options = [];
 
         return array_merge($options, parent::getOptions());
     }
