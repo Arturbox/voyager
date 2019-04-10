@@ -48,4 +48,6 @@ return [
     'updated_order'          => 'Order updated successfully',
     'url_slug'               => 'URL Slug (must be unique)',
     'url_slug_ph'            => 'URL slug (ex. posts)',
+    'filter'                 => 'Filters',
+    'create_filter'          => 'Add filter'
 ];

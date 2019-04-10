@@ -388,6 +388,33 @@
                         </div>
                     </div><!-- .panel -->
 
+                    @if(isset($dataType->id))
+                        @php
+                             $dataFilters = TCG\Voyager\Models\DataFilter::where('data_type_id', '=',$dataType->id)->orderBy('order')->get();
+                        @endphp
+                        <div class="panel panel-primary panel-bordered">
+                            <div class="panel-heading">
+                                <h3 class="panel-title panel-icon"><i class="voyager-window-list"></i> {{ __('voyager::bread.filter', ['table' => $table]) }}</h3>
+                                <div class="panel-actions">
+                                    <a class="panel-action voyager-angle-up" data-toggle="panel-collapse" aria-hidden="true"></a>
+                                </div>
+                            </div>
+
+                            <div class="panel-body">
+                                <div class="dd">
+                                    @include('voyager::tools.bread.filter.builder', ['items' => $dataFilters])
+                            </div>Edit the rows for the esims table below:
+
+                            <!-- .panel-body -->
+                            <div class="panel-footer">
+                                <div class="btn btn-new-filter"><i class="voyager-heart"></i> <span>
+                                 {{ __('voyager::bread.create_filter') }}</span></div>
+                            </div>
+                        </div><!-- .panel -->
+                    @endif
+
+
+
                     <button type="submit" class="btn pull-right btn-primary">{{ __('voyager::generic.submit') }}</button>
 
                 </form>
@@ -395,7 +422,8 @@
         </div><!-- .row -->
     </div><!-- .page-content -->
 
-@include('voyager::tools.bread.relationship-new-modal')
+    @include('voyager::tools.bread.filter-add')
+    @include('voyager::tools.bread.relationship-new-modal')
 
 @stop
 
@@ -566,6 +594,12 @@
                 $('#new_relationship_modal').modal('show');
             });
 
+           $(".btn-new-filter").click(function(){
+               $("#new_filter_modal").modal("show");
+           });
+
+           {!! add_modal_scripts($dataFilters) !!}
+
             relationshipTextDataBinding();
 
             $('.relationship_table').on('change', function(){
@@ -626,4 +660,152 @@
 
         /********** End Relationship Functionality **********/
     </script>
+    <script>
+        $(document).ready(function () {
+            @if ($isModelTranslatable)
+            /**
+             * Multilingual setup for main page
+             */
+            $('.side-body').multilingual({
+                "transInputs": '.dd-list input[data-i18n=true]'
+            });
+
+            /**
+             * Multilingual for Add/Edit Menu
+             */
+            $('#menu_item_modal').multilingual({
+                "form":          'form',
+                "transInputs":   '#menu_item_modal input[data-i18n=true]',
+                "langSelectors": '.language-selector input',
+                "editing":       true
+            });
+            @endif
+
+
+            $('.dd').nestable({});
+
+
+            /**
+             * Set Variables
+             */
+            var $m_modal       = $('#menu_item_modal'),
+                $m_hd_add      = $('#m_hd_add').hide().removeClass('hidden'),
+                $m_hd_edit     = $('#m_hd_edit').hide().removeClass('hidden'),
+                $m_form        = $('#m_form'),
+                $m_form_method = $('#m_form_method'),
+                $m_title       = $('#m_title'),
+                $m_title_i18n  = $('#title_i18n'),
+                $m_url_type    = $('#m_url_type'),
+                $m_url         = $('#m_url'),
+                $m_link_type   = $('#m_link_type'),
+                $m_route_type  = $('#m_route_type'),
+                $m_route       = $('#m_route'),
+                $m_parameters  = $('#m_parameters'),
+                $m_icon_class  = $('#m_icon_class'),
+                $m_color       = $('#m_color'),
+                $m_target      = $('#m_target'),
+                $m_id          = $('#m_id');
+
+
+
+
+
+            /**
+             * Menu Modal is Open
+             */
+            $m_modal.on('show.bs.modal', function(e, data) {
+                var _adding      = e.relatedTarget.data ? false : true,
+                    translatable = $m_modal.data('multilingual'),
+                    $_str_i18n   = '';
+
+                if (_adding) {
+                    $m_form.attr('action', $m_form.data('action-add'));
+                    $m_form_method.val('POST');
+                    $m_hd_add.show();
+                    $m_hd_edit.hide();
+                    $m_target.val('_self').change();
+                    $m_link_type.val('url').change();
+                    $m_url.val('');
+                    $m_icon_class.val('');
+
+                } else {
+                    $m_form.attr('action', $m_form.data('action-update'));
+                    $m_form_method.val('PUT');
+                    $m_hd_add.hide();
+                    $m_hd_edit.show();
+
+                    var _src = e.relatedTarget.data, // the source
+                        id   = _src.data('id');
+
+                    $m_title.val(_src.data('title'));
+                    $m_url.val(_src.data('url'));
+                    $m_route.val(_src.data('route'));
+                    $m_parameters.val(JSON.stringify(_src.data('parameters')));
+                    $m_icon_class.val(_src.data('icon_class'));
+                    $m_color.val(_src.data('color'));
+                    $m_id.val(id);
+
+                    if(translatable){
+                        $_str_i18n = $("#title" + id + "_i18n").val();
+                    }
+
+                    if (_src.data('target') == '_self') {
+                        $m_target.val('_self').change();
+                    } else if (_src.data('target') == '_blank') {
+                        $m_target.find("option[value='_self']").removeAttr('selected');
+                        $m_target.find("option[value='_blank']").attr('selected', 'selected');
+                        $m_target.val('_blank');
+                    }
+                    if (_src.data('route') != "") {
+                        $m_link_type.val('route').change();
+                        $m_url_type.hide();
+                    } else {
+                        $m_link_type.val('url').change();
+                        $m_route_type.hide();
+                    }
+                    if ($m_link_type.val() == 'route') {
+                        $m_url_type.hide();
+                        $m_route_type.show();
+                    } else {
+                        $m_route_type.hide();
+                        $m_url_type.show();
+                    }
+                }
+
+                if (translatable) {
+                    $m_title_i18n.val($_str_i18n);
+                    translatable.refresh();
+                }
+            });
+
+
+            /**
+             * Toggle Form Menu Type
+             */
+            $m_link_type.on('change', function (e) {
+                if ($m_link_type.val() == 'route') {
+                    $m_url_type.hide();
+                    $m_route_type.show();
+                } else {
+                    $m_url_type.show();
+                    $m_route_type.hide();
+                }
+            });
+
+
+            /**
+             * Reorder items
+             */
+            $('.dd').on('change', function (e) {
+                $.post('{{ route('voyager.bread.order_filter') }}', {
+                    order: JSON.stringify($('.dd').nestable('serialize')),
+                    _token: '{{ csrf_token() }}'
+                }, function (data) {
+                    toastr.success("{{ __('voyager::menu_builder.updated_order') }}");
+                });
+            });
+        });
+    </script>
+
+
 @stop

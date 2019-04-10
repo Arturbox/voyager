@@ -14,6 +14,7 @@ use TCG\Voyager\Events\BreadAdded;
 use TCG\Voyager\Events\BreadDeleted;
 use TCG\Voyager\Events\BreadUpdated;
 use TCG\Voyager\Facades\Voyager;
+use TCG\Voyager\Models\DataFilter;
 use TCG\Voyager\Models\DataRow;
 use TCG\Voyager\Models\DataType;
 use TCG\Voyager\Models\Permission;
@@ -334,5 +335,94 @@ class VoyagerBreadController extends Controller
                 'message'    => 'Successfully deleted relationship.',
                 'alert-type' => 'success',
             ]);
+    }
+
+    // ************************************************************
+    //        FILTERS
+    //
+    // ************************************************************
+
+    /**
+     * Add Relationship.
+     *
+     * @param Request $request
+     */
+    public function addFilter(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Build the relationship details
+            $Details = json_decode($request->details,true);
+
+            $newFilter = new DataFilter();
+            $newFilter->data_type_id = $request->data_type_id;
+            $newFilter->display_name = $request->display_name;
+            $newFilter->details = $Details;
+            $newFilter->order = intval(Voyager::model('DataFilter')->lastFilter()) + 1;
+            $newFilter->parent_id = $request->parent_id??$request->parent_id!='';
+
+            if (!$newFilter->save()) {
+                return back()->with([
+                    'message'    => 'Error saving new filter for '.$request->display_name,
+                    'alert-type' => 'error',
+                ]);
+            }
+
+            DB::commit();
+
+            return back()->with([
+                'message'    => 'Successfully created new filter for '.$request->display_name,
+                'alert-type' => 'success',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return back()->with([
+                'message'    => 'Error creating new filter: '.$e->getMessage(),
+                'alert-type' => 'error',
+            ]);
+        }
+    }
+
+    /**
+     * Delete Filter.
+
+     *
+     * @param Number $id Record id
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function deleteFilter($id)
+    {
+        Voyager::model('DataFilter')->destroy($id);
+
+        return back()->with([
+            'message'    => 'Successfully deleted Filter.',
+            'alert-type' => 'success',
+        ]);
+    }
+
+    public function update_order(Request $request)
+    {
+        $filterOrder = json_decode($request->input('order'));
+        $this->orderFilter($filterOrder, null);
+    }
+
+
+
+    private function orderFilter($filters, $parentId)
+    {
+        foreach ($filters as $index => $filter) {
+
+            $item = Voyager::model('DataFilter')->findOrFail($filter->id);
+            $item->order = $index + 1;
+            $item->parent_id = $parentId;
+            $item->save();
+
+            if (isset($filter->children)) {
+                $this->orderFilter($filter->children, $item->id);
+            }
+        }
     }
 }

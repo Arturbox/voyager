@@ -44,6 +44,23 @@ class CreateDataTypesTable extends Migration
             $table->foreign('data_type_id')->references('id')->on('data_types')
                 ->onUpdate('cascade')->onDelete('cascade');
         });
+
+
+        // Create table for storing roles
+        Schema::create('data_filters', function (Blueprint $table) {
+            $table->increments('id');
+            $table->integer('data_type_id')->unsigned();
+            $table->integer('parent_id')->nullable();
+            $table->string('section');
+            $table->string('display_name');
+            $table->boolean('required')->default(false);
+            $table->text('details')->nullable();
+            $table->integer('order');
+
+            $table->foreign('data_type_id')->references('id')->on('data_types')
+                ->onUpdate('cascade')->onDelete('cascade');
+        });
+
     }
 
     /**
@@ -53,6 +70,7 @@ class CreateDataTypesTable extends Migration
      */
     public function down()
     {
+        Schema::drop('data_filters');
         Schema::drop('data_rows');
         Schema::drop('data_types');
     }

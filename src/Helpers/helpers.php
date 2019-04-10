@@ -117,3 +117,20 @@ if (!function_exists('rename_migration')) {
         });
     }
 }
+
+if (!function_exists('add_modal_scripts')) {
+    function add_modal_scripts($dataFilters)
+    {
+        $script = '';
+        foreach($dataFilters as $filter){
+
+            $script .= '$(".btn-new-filter-'.$filter->id.'").click(function(){
+                    $("#new_filter_'.$filter->id.'_modal").modal("show");
+                });';
+
+            if(!$filter->children->isEmpty())
+                $script .= add_modal_scripts($filter->children);
+        }
+        return $script;
+    }
+}
