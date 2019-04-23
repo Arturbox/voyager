@@ -94,6 +94,7 @@ class VoyagerBaseController extends Controller
 
         // Check if BREAD is Translatable
         if (($isModelTranslatable = is_bread_translatable($model))) {
+            $dataType->load('translations');
             $dataTypeContent->load('translations');
         }
 
@@ -159,7 +160,10 @@ class VoyagerBaseController extends Controller
         $this->authorize('read', $dataTypeContent);
 
         // Check if BREAD is Translatable
-        $isModelTranslatable = is_bread_translatable($dataTypeContent);
+        if ($isModelTranslatable = is_bread_translatable($dataTypeContent)){
+            $dataType->load('translations');
+            $dataTypeContent->load('translations');
+        }
 
         $view = 'voyager::bread.read';
 
@@ -203,7 +207,10 @@ class VoyagerBaseController extends Controller
         $this->authorize('edit', $dataTypeContent);
 
         // Check if BREAD is Translatable
-        $isModelTranslatable = is_bread_translatable($dataTypeContent);
+        if ($isModelTranslatable = is_bread_translatable($dataTypeContent)){
+            $dataType->load('translations');
+            $dataTypeContent->load('translations');
+        }
 
         $view = 'voyager::bread.edit-add';
 
@@ -284,7 +291,10 @@ class VoyagerBaseController extends Controller
         $this->removeRelationshipField($dataType, 'add');
 
         // Check if BREAD is Translatable
-        $isModelTranslatable = is_bread_translatable($dataTypeContent);
+        if ($isModelTranslatable = is_bread_translatable($dataTypeContent)){
+            $dataType->load('translations');
+            $dataTypeContent->load('translations');
+        }
 
         $view = 'voyager::bread.edit-add';
 
@@ -493,6 +503,10 @@ class VoyagerBaseController extends Controller
         $display_column = $dataType->order_display_column;
 
         $dataRow = Voyager::model('DataRow')->whereDataTypeId($dataType->id)->whereField($display_column)->first();
+
+        if ($isModelTranslatable = is_bread_translatable($model)){
+            $dataType->load('translations');
+        }
 
         $view = 'voyager::bread.order';
 
