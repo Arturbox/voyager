@@ -121,7 +121,7 @@ Route::group(['as' => 'voyager.'], function () {
             Route::post('relationship', ['uses' => $namespacePrefix.'VoyagerBreadController@addRelationship',  'as' => 'relationship']);
             Route::get('delete_relationship/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@deleteRelationship',  'as' => 'delete_relationship']);
             Route::post('filter', ['uses' => $namespacePrefix.'VoyagerBreadController@addFilter',  'as' => 'filter']);
-            Route::get('delete_filter/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@deleteFilter',  'as' => 'delete_filter']);
+            Route::delete('delete_filter/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@deleteFilter',  'as' => 'delete_filter']);
             Route::post('order_filter', ['uses' => $namespacePrefix.'VoyagerBreadController@update_order',  'as' => 'order_filter']);
         });
 

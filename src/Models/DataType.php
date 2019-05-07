@@ -27,6 +27,7 @@ class DataType extends Model
         'controller',
         'description',
         'generate_permissions',
+        'show_filters',
         'server_side',
         'order_column',
         'order_display_column',
@@ -69,7 +70,7 @@ class DataType extends Model
     {
         return $this->hasMany(Voyager::modelClass('DataRow'))->orderBy('order', 'DESC')->first();
     }
-
+    
     public function setGeneratePermissionsAttribute($value)
     {
         $this->attributes['generate_permissions'] = $value ? 1 : 0;
@@ -80,13 +81,18 @@ class DataType extends Model
         $this->attributes['server_side'] = $value ? 1 : 0;
     }
 
+    public function setShowFiltersAttribute($value)
+    {
+        $this->attributes['show_filters'] = $value ? 1 : 0;
+    }
+
     public function updateDataType($requestData, $throw = false)
     {
         try {
             DB::beginTransaction();
 
             // Prepare data
-            foreach (['generate_permissions', 'server_side'] as $field) {
+            foreach (['generate_permissions', 'server_side','show_filters'] as $field) {
                 if (!isset($requestData[$field])) {
                     $requestData[$field] = 0;
                 }

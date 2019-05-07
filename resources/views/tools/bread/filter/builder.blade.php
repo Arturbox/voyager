@@ -2,11 +2,9 @@
     @foreach ($dataFilters as $filter)
         <li class="dd-item" data-id="{{ $filter->id }}">
             <div class="pull-right item_actions">
-                <div class="btn btn-new-filter-{{$filter->id}}"><i class="voyager-heart"></i><span>
-                                                            {{ __('voyager::bread.create_filter') }}</span></div>
-                <div class="btn btn-sm btn-danger pull-right delete" data-id="{{ $filter->id }}">
-                    <i class="voyager-trash"></i> {{ __('voyager::generic.delete') }}
-                </div>
+                <a href="javascript:;" title="Delete" class="btn btn-sm btn-danger pull-right delete" data-id="{{ $filter->id }}" id="delete-{{ $filter->id }}">
+                    <i class="voyager-trash"></i> <span class="hidden-xs hidden-sm">{{ __('voyager::generic.delete') }}</span>
+                </a>
             </div>
             <div class="dd-handle">
                     {{--@include('voyager::multilingual.input-hidden', [--}}
@@ -15,9 +13,6 @@
                         {{--'_field_trans'        => json_encode($filter->getTranslationsOf('display_name'))--}}
                     {{--])--}}
                 <span>{{$filter->display_name}}</span> <small class="url">{{$filter->details->table}}</small>
-            </div>
-            <div class="current_model_options">
-                @include('voyager::tools.bread.filter-add',['id'=>$filter->id,'dataType'=>Voyager::model('DataType')->whereName($filter->details->table)->first()])
             </div>
             @if(!$filter->children->isEmpty())
                 @include('voyager::tools.bread.filter.builder', ['dataFilters' => $filter->children])

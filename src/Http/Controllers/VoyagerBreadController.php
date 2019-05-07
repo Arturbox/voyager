@@ -79,7 +79,8 @@ class VoyagerBreadController extends Controller
             'display_name_plural'  => Str::plural($displayName),
             'model_name'           => $modelNamespace.Str::studly(Str::singular($table)),
             'generate_permissions' => true,
-            'server_side'          => false,
+            'show_filters' => false,
+            'server_side' => false,
         ];
     }
 
@@ -358,10 +359,10 @@ class VoyagerBreadController extends Controller
             $newFilter = new DataFilter();
             $newFilter->data_type_id = $request->data_type_id;
             $newFilter->display_name = $request->display_name;
+            $newFilter->display_field = $request->display_field;
             $newFilter->details = $Details;
             $newFilter->order = intval(Voyager::model('DataFilter')->lastFilter()) + 1;
-            $newFilter->parent_id = $request->parent_id??$request->parent_id!='';
-
+            $newFilter->parent_id = $request->parent_id??$request->parent_id!=null;
             if (!$newFilter->save()) {
                 return back()->with([
                     'message'    => 'Error saving new filter for '.$request->display_name,

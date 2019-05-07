@@ -403,7 +403,7 @@
                             <div class="panel-body">
                                 <div class="dd">
                                     @include('voyager::tools.bread.filter.builder', ['items' => $dataFilters])
-                            </div>Edit the rows for the esims table below:
+                            </div>
 
                             <!-- .panel-body -->
                             <div class="panel-footer">
@@ -424,6 +424,7 @@
 
     @include('voyager::tools.bread.filter-add')
     @include('voyager::tools.bread.relationship-new-modal')
+    @include('voyager::tools.bread.modals.delete')
 
 @stop
 
@@ -804,6 +805,14 @@
                     toastr.success("{{ __('voyager::menu_builder.updated_order') }}");
                 });
             });
+
+            $(document).on('click','.delete' ,function (e) {
+                alert(1);
+                $('#delete_form')[0].action = '{{ route('voyager.bread.delete_filter', ['id' => '__id']) }}'.replace('__id', $(this).data('id'));
+                console.log($('#delete_form')[0].action);
+                $('#delete_modal').modal('show');
+            });
+
         });
     </script>
 

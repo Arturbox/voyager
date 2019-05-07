@@ -23,6 +23,7 @@ class CreateDataTypesTable extends Migration
             $table->string('model_name')->nullable();
             $table->string('description')->nullable();
             $table->boolean('generate_permissions')->default(false);
+            $table->boolean('show_filters')->default(false);
             $table->timestamps();
         });
 
@@ -51,7 +52,7 @@ class CreateDataTypesTable extends Migration
             $table->increments('id');
             $table->integer('data_type_id')->unsigned();
             $table->integer('parent_id')->nullable();
-            $table->string('section');
+            $table->string('display_field');
             $table->string('display_name');
             $table->boolean('required')->default(false);
             $table->text('details')->nullable();

@@ -42,7 +42,13 @@ class VoyagerBaseController extends Controller
 
         $getter = $dataType->server_side ? 'paginate' : 'get';
 
+        if ($request->get('type') == 'selectFilter')
+            $selectFilter = (object) ['type' => $request->get('type'), 'tables' => $request->except('type') ];
+
         $search = (object) ['value' => $request->get('s'), 'key' => $request->get('key'), 'filter' => $request->get('filter')];
+
+        $dataFilters = Voyager::model('DataFilter')->where('data_type_id', $dataType->id )->where('parent_id','=',0)->orderBy('order')->get();
+
         $searchable = $dataType->server_side ? array_keys(SchemaManager::describeTable(app($dataType->model_name)->getTable())->toArray()) : '';
         $orderBy = $request->get('order_by', $dataType->order_column);
         $sortOrder = $request->get('sort_order', null);
@@ -98,8 +104,49 @@ class VoyagerBaseController extends Controller
             $dataTypeContent->load('translations');
         }
 
+
+        if (isset($selectFilter) && count($selectFilter->tables)>0){
+            foreach ($selectFilter->tables as $k => $value){
+                $dataFilterSelected = Voyager::model('DataFilter')->where('id', '=', $k)->first();
+                if ($dataFilterSelected->details->type == "belongsToMany"){
+                    foreach ($dataTypeContent as $key => &$data){
+                        $relationKey = $data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()->pivot->getRelatedKey();
+                        if (!$data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->where($relationKey,'=',$value)->get()->count())
+                            unset($dataTypeContent[$key]);
+                    }
+                }
+                elseif ($dataFilterSelected->details->type == "belongsTo"){
+                    foreach ($dataTypeContent as $key => &$data){
+                        if ($data->{$dataFilterSelected->details->column} != $value){
+                            unset($dataTypeContent[$key]);
+                        }
+                    }
+                }
+                elseif ($dataFilterSelected->details->type == "hasOne"){
+                    foreach ($dataTypeContent as $key => &$data){
+                        if (!$data->hasOne($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
+                            unset($dataTypeContent[$key]);
+                        }
+                    }
+                }
+                elseif ($dataFilterSelected->details->type == "hasMany"){
+                    foreach ($dataTypeContent as $key => &$data){
+                        if (!$data->hasMany($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
+                            unset($dataTypeContent[$key]);
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+
         // Check if server side pagination is enabled
         $isServerSide = isset($dataType->server_side) && $dataType->server_side;
+
+        // Check if server side pagination is enabled
+        $isShowFilters = isset($dataType->show_filters) && $dataType->show_filters;
 
         // Check if a default search key is set
         $defaultSearchKey = isset($dataType->default_search_key) ? $dataType->default_search_key : null;
@@ -120,7 +167,9 @@ class VoyagerBaseController extends Controller
             'sortOrder',
             'searchable',
             'isServerSide',
-            'defaultSearchKey'
+            'isShowFilters',
+            'defaultSearchKey',
+            'dataFilters'
         ));
     }
 
