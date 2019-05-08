@@ -12,6 +12,8 @@
                     $relationshipData = (isset($data)) ? $data : $dataTypeContent;
                     $model = app($options->model);
                     $query = $model::find($relationshipData->{$options->column});
+                    if ($query)
+                        $query = $query->translate(App()->getLocale());
                 @endphp
 
                 @if(isset($query))
@@ -47,7 +49,8 @@
 
                 $model = app($options->model);
                 $query = $model::where($options->column, '=', $relationshipData->id)->first();
-
+                if ($query)
+                        $query = $query->translate(App()->getLocale());
             @endphp
 
             @if(isset($query))
@@ -64,6 +67,7 @@
                     $relationshipData = (isset($data)) ? $data : $dataTypeContent;
                     $model = app($options->model);
             		$selected_values = $model::where($options->column, '=', $relationshipData->id)->get()->map(function ($item, $key) use ($options) {
+                        $item = $item->translate(App()->getLocale());
             			return $item->{$options->label};
             		})->all();
                 @endphp
@@ -117,6 +121,7 @@
                 @php
                     $relationshipData = (isset($data)) ? $data : $dataTypeContent;
                     $selected_values = isset($relationshipData) ? $relationshipData->belongsToMany($options->model, $options->pivot_table)->get()->map(function ($item, $key) use ($options) {
+            			$item = $item->translate(App()->getLocale());
             			return $item->{$options->label};
             		})->all() : array();
                 @endphp
