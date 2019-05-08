@@ -14,5 +14,9 @@ class DummyClass extends Model
 
     //DummyySDTraitTranslatablColumns
 
+    public function parentId()
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
 
 }
