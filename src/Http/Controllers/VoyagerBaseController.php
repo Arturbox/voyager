@@ -102,6 +102,7 @@ class VoyagerBaseController extends Controller
         if (($isModelTranslatable = is_bread_translatable($model))) {
             $dataType->load('translations');
             $dataTypeContent->load('translations');
+            $dataType = $dataType->translate(App()->getLocale());
         }
 
 
@@ -212,6 +213,7 @@ class VoyagerBaseController extends Controller
         if ($isModelTranslatable = is_bread_translatable($dataTypeContent)){
             $dataType->load('translations');
             $dataTypeContent->load('translations');
+            $dataType = $dataType->translate(App()->getLocale());
         }
 
         $view = 'voyager::bread.read';
@@ -259,6 +261,7 @@ class VoyagerBaseController extends Controller
         if ($isModelTranslatable = is_bread_translatable($dataTypeContent)){
             $dataType->load('translations');
             $dataTypeContent->load('translations');
+            $dataType = $dataType->translate(App()->getLocale());
         }
 
         $view = 'voyager::bread.edit-add';
@@ -343,6 +346,7 @@ class VoyagerBaseController extends Controller
         if ($isModelTranslatable = is_bread_translatable($dataTypeContent)){
             $dataType->load('translations');
             $dataTypeContent->load('translations');
+            $dataType = $dataType->translate(App()->getLocale());
         }
 
         $view = 'voyager::bread.edit-add';
@@ -555,6 +559,7 @@ class VoyagerBaseController extends Controller
 
         if ($isModelTranslatable = is_bread_translatable($model)){
             $dataType->load('translations');
+            $dataType = $dataType->translate(App()->getLocale());
         }
 
         $view = 'voyager::bread.order';
