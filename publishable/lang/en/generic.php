@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'checkbox_data_on'       => 'On',
+    'checkbox_data_off'      => 'Off ',
     'action'                 => 'Action',
     'actions'                => 'Actions',
     'add'                    => 'Add',

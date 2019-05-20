@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'checkbox_data_on'       => 'Ակտիվ',
+    'checkbox_data_off'      => 'Ոչ ակտիվ',
     'action'                 => 'Գործողություն',
     'actions'                => 'Գործողություններ',
     'add'                    => 'Ավեացնել',

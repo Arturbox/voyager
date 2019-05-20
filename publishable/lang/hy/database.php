@@ -64,6 +64,7 @@ return [
         'has_many'             => 'Մեկը շատին',
         'belongs_to'           => 'Պատկանում է',
         'belongs_to_many'      => 'Պատկանում է շատերին',
+        'one_in_chain'      => 'Մեկը շղթայի մեջ',
         'which_column_from'    => 'Which column from the',
         'is_used_to_reference' => 'օգտագործվում է որպես տեղեկանք',
         'pivot_table'          => 'Առանցքային աղյուսակ',

@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'checkbox_data_on'       => 'Активный',
+    'checkbox_data_off'      => 'Неактивный ',
     'action'                 => 'Действие',
     'actions'                => 'Доступные действия',
     'add'                    => 'Добавить',

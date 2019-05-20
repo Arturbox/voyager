@@ -64,6 +64,7 @@ return [
         'has_many'             => 'Has Many',
         'belongs_to'           => 'Belongs To',
         'belongs_to_many'      => 'Belongs To Many',
+        'one_in_chain'      => 'One In Chain',
         'which_column_from'    => 'Which column from the',
         'is_used_to_reference' => 'is used to reference the',
         'pivot_table'          => 'Pivot Table',

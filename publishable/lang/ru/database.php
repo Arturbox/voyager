@@ -62,6 +62,7 @@ return [
         'has_many'             => 'Один ко многим',
         'belongs_to'           => 'Многие к одному',
         'belongs_to_many'      => 'Многие ко многим',
+        'one_in_chain'      => 'Один в цепи',
         'which_column_from'    => 'Какой столбец из',
         'is_used_to_reference' => 'используется для ссылки на',
         'pivot_table'          => 'Сводная таблица',
