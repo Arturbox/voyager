@@ -97,4 +97,5 @@ return [
     'viewing'                => 'Դիտում',
     'yes'                    => 'Այո',
     'yes_please'             => 'Այո, Խնդրեմ',
+    'restoreLog'             => 'Վերականգնել',
 ];
