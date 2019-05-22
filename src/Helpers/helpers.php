@@ -26,7 +26,7 @@ if (!function_exists('getAllModels')) {
         try {
             return collect(File::allFiles(base_path(config('voyager.models.namespace_separator', app()->getNamespace()))))->map(function($contact)  {
 
-                $contact->fullPath = config('voyager.models.namespace_separator', app()->getNamespace()).substr($contact->getFilename(),0,-4);;
+                $contact->fullPath = config('voyager.models.namespace', app()->getNamespace()).substr($contact->getFilename(),0,-4);;
 
                 return $contact;
             });
