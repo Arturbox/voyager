@@ -98,4 +98,5 @@ return [
     'yes'                    => 'Այո',
     'yes_please'             => 'Այո, Խնդրեմ',
     'restoreLog'             => 'Վերականգնել',
+    'create'                 => 'Ստեղծել',
 ];

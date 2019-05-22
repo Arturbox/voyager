@@ -98,4 +98,5 @@ return [
     'yes'                    => 'Yes',
     'yes_please'             => 'Yes, Please',
     'restoreLog'             => 'Restore Log',
+    'create'                 => 'Create',
 ];
