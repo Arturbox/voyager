@@ -17,7 +17,7 @@ class RestoreAction extends AbstractAction
 
     public function getIcon()
     {
-        return 'voyager-restore';
+        return 'glyphicon glyphicon-repeat';
     }
 
     public function getPolicy()
