@@ -160,8 +160,8 @@ class VoyagerBreadController extends Controller
 
             $res = $dataType->updateDataType($request->all(), true);
             $data = $res
-                ? $this->alertSuccess(('voyager::bread.success_update_bread', ['datatype' => $dataType->name]))
-                : $this->alertError(('voyager::bread.error_updating_bread'));
+                ? $this->alertSuccess(__('voyager::bread.success_update_bread', ['datatype' => $dataType->name]))
+                : $this->alertError(__('voyager::bread.error_updating_bread'));
             if ($res) {
                 event(new BreadUpdated($dataType, $data));
             }
@@ -214,8 +214,8 @@ class VoyagerBreadController extends Controller
 
         $res = Voyager::model('DataType')->destroy($id);
         $data = $res
-            ? $this->alertSuccess(('voyager::bread.success_remove_bread', ['datatype' => $dataType->name]))
-            : $this->alertError(('voyager::bread.error_updating_bread'));
+            ? $this->alertSuccess(__('voyager::bread.success_remove_bread', ['datatype' => $dataType->name]))
+            : $this->alertError(__('voyager::bread.error_updating_bread'));
         if ($res) {
             event(new BreadDeleted($dataType, $data));
         }
