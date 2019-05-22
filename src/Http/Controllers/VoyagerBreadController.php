@@ -150,21 +150,37 @@ class VoyagerBreadController extends Controller
         try {
             $dataType = Voyager::model('DataType')->find($id);
 
+            $dataRows = Voyager::model('DataRow')->where('data_type_id',$id)->get();
+
             // Prepare Translations and Transform data
             $translations = is_bread_translatable($dataType)
                 ? $dataType->prepareTranslations($request)
                 : [];
 
+
             $res = $dataType->updateDataType($request->all(), true);
             $data = $res
-                ? $this->alertSuccess(__('voyager::bread.success_update_bread', ['datatype' => $dataType->name]))
-                : $this->alertError(__('voyager::bread.error_updating_bread'));
+                ? $this->alertSuccess(('voyager::bread.success_update_bread', ['datatype' => $dataType->name]))
+                : $this->alertError(('voyager::bread.error_updating_bread'));
             if ($res) {
                 event(new BreadUpdated($dataType, $data));
             }
 
             // Save translations if applied
             $dataType->saveTranslations($translations);
+
+            foreach ($dataRows as $row){
+                foreach ($row->getTranslatableAttributes() as $attribute) {
+                    $request->request->add([ $attribute => $request->{'field_'.$attribute.'_'.$row->field} ]);
+                    $request->request->add([ $attribute.'_i18n' => $request->{'field_'.$attribute.'_'.$row->field.'_i18n'} ]);
+                }
+                $translationsRow = is_bread_translatable($row)
+                    ? $row->prepareTranslations($request)
+                    : [];
+                $row->saveTranslations($translationsRow);
+                unset($request->{'field_'.$attribute.'_'.$row->field});
+                unset($request->{'field_'.$attribute.'_'.$row->field.'_i18n'});
+            }
 
             return redirect()->route('voyager.bread.index')->with($data);
         } catch (Exception $e) {
@@ -186,15 +202,20 @@ class VoyagerBreadController extends Controller
         /* @var \TCG\Voyager\Models\DataType $dataType */
         $dataType = Voyager::model('DataType')->find($id);
 
+        $dataRows = Voyager::model('DataRow')->where('data_type_id',$id)->get();
+
         // Delete Translations, if present
         if (is_bread_translatable($dataType)) {
             $dataType->deleteAttributeTranslations($dataType->getTranslatableAttributes());
+            foreach ($dataRows as $row){
+                $row->deleteAttributeTranslations($row->getTranslatableAttributes());
+            }
         }
 
         $res = Voyager::model('DataType')->destroy($id);
         $data = $res
-            ? $this->alertSuccess(__('voyager::bread.success_remove_bread', ['datatype' => $dataType->name]))
-            : $this->alertError(__('voyager::bread.error_updating_bread'));
+            ? $this->alertSuccess(('voyager::bread.success_remove_bread', ['datatype' => $dataType->name]))
+            : $this->alertError(('voyager::bread.error_updating_bread'));
         if ($res) {
             event(new BreadDeleted($dataType, $data));
         }
