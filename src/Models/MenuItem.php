@@ -21,6 +21,11 @@ class MenuItem extends Model
 
     protected $translatable = ['title'];
 
+    public function parentId()
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
     public function children()
     {
         return $this->hasMany(Voyager::modelClass('MenuItem'), 'parent_id')
