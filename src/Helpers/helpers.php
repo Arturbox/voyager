@@ -88,12 +88,12 @@ if (!function_exists('rename_model')) {
     function rename_model($collection, $table_info)
     {
 
-        $table_info = preg_replace('/s$/', '', $table_info['oldName']);
+        $tableName = preg_replace('/s$/', '', $table_info['oldName']);
 
-        return $collection->map(function ($value) use ($table_info) {
+        return $collection->map(function ($value) use ($tableName) {
             /*Checking statement, if there is a model name , wich contains a table name with uppercase, then renaming the model name to new name*/
-            if (ucwords($table_info['oldName'] . '.php') === $value->getFilename()) {
-                File::move($value->getPath() . '/' . $value->getFilename(), $value->getPath() . '/' . ucwords($table_info['name'] . '.php'));
+            if (ucwords($tableName . '.php') === $value->getFilename()) {
+                File::move($value->getPath() . '/' . $value->getFilename(), $value->getPath() . '/' . ucwords($tableName . '.php'));
             }
         });
     }
