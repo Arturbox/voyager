@@ -100,4 +100,8 @@ return [
     'restoreLog'             => 'Restore Log',
     'create'                 => 'Create',
     'restore'                => 'Restore deleted',
+    'restore_question'       => 'Are you sure?',
+    'restore_confirm'        => 'Yes',
+    'order'                  => 'Order',
+    'more'                   => 'More',
 ];

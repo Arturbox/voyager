@@ -97,5 +97,9 @@ return [
     'yes_please'             => 'Да, пожалуйста',
     'restoreLog'             => 'Восстановить журнал',
     'create'                 => 'Создайте',
-    'restore'                => 'Восстановить удалённые',
+    'restore'                => 'Восстановить',
+    'restore_question'       => 'Уверены ли вы?',
+    'restore_confirm'        => 'Да',
+    'more'                   => 'Больше',
+    'order'                  => 'Сортировка',
 ];
