@@ -16,7 +16,7 @@ return [
     'bread'                  => 'BREAD',
     'browse'                 => 'Browse',
     'builder'                => 'Ստեղծող',
-    'bulk_delete'            => 'Ջնջել բոլորը',
+    'bulk_delete'            => 'Զանգվածային ջնջել',
     'bulk_delete_confirm'    => 'Այո, ջնջել սրանք',
     'bulk_delete_nothing'    => 'Դուք ոչինչ չեք ընտրել ջնջելու համար:',
     'cancel'                 => 'Չեղարկել',

@@ -33,9 +33,11 @@
                             <p class="relationship_table_select">Show filed</p>
                             <select class="form-control select2 filter_fields"  name="display_field" value="">
                                 @foreach($dataTypeTables as $dataTypeTable)
-                                    @foreach($dataTypeTable['dataTypeTable']->browseRows->where('type','text') as  $field)
-                                        <option value="{{$field->field}}" class="{{$dataTypeTable['field']}}"> {{$field->display_name}} </option>
-                                    @endforeach
+                                    @if($dataTypeTable['dataTypeTable'])
+                                        @foreach($dataTypeTable['dataTypeTable']->browseRows->where('type','text') as  $field)
+                                            <option value="{{$field->field}}" class="{{$dataTypeTable['field']}}"> {{$field->display_name}} </option>
+                                        @endforeach
+                                    @endif
                                 @endforeach
                             </select>
                         </div>

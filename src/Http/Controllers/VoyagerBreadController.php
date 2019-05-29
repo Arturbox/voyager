@@ -246,8 +246,7 @@ class VoyagerBreadController extends Controller
     public function addRelationship(Request $request)
     {
         $relationshipField = $this->getRelationshipField($request);
-
-        if (!class_exists($request->relationship_model)) {
+        if (!class_exists($request->relationship_model) and (is_array($request->relationship_chain_model) and !classes_exists($request->relationship_chain_model)) ) {
             return back()->with([
                 'message'    => 'Model Class '.$request->relationship_model.' does not exist. Please create Model before creating relationship.',
                 'alert-type' => 'error',
@@ -262,18 +261,33 @@ class VoyagerBreadController extends Controller
                 $relationship_column = $request->relationship_column;
             }
 
-            // Build the relationship details
-            $relationshipDetails = [
-                'model'       => $request->relationship_model,
-                'table'       => $request->relationship_table,
-                'type'        => $request->relationship_type,
-                'column'      => $relationship_column,
-                'key'         => $request->relationship_key,
-                'label'       => $request->relationship_label,
-                'pivot_table' => $request->relationship_pivot,
-                'pivot'       => ($request->relationship_type == 'belongsToMany') ? '1' : '0',
-                'taggable'    => $request->relationship_taggable,
-            ];
+            if ($request->relationship_type == 'oneInChain'){
+                $relationshipDetails = [
+                    'model'       => $request->relationship_chain_model,
+                    'table'       => $request->relationship_chain_table,
+                    'type'        => $request->relationship_type,
+                    'column'      => $relationship_column,
+                    'key'         => $request->relationship_keyChain,
+                    'label'       => $request->relationship_chain_label,
+                    'pivot_table' => $request->relationship_pivot,
+                    'pivot'       => '1',
+                    'taggable'    => $request->relationship_taggable,
+                ];
+            }
+            else{
+                // Build the relationship details
+                $relationshipDetails = [
+                    'model'       => $request->relationship_model,
+                    'table'       => $request->relationship_table,
+                    'type'        => $request->relationship_type,
+                    'column'      => $relationship_column,
+                    'key'         => $request->relationship_key,
+                    'label'       => $request->relationship_label,
+                    'pivot_table' => $request->relationship_pivot,
+                    'pivot'       => ($request->relationship_type == 'belongsToMany') ? '1' : '0',
+                    'taggable'    => $request->relationship_taggable,
+                ];
+            }
 
             $newRow = new DataRow();
 

@@ -181,18 +181,34 @@ class DataType extends Model
                         $relationship_column = $requestData['relationship_column_'.$relationship];
                     }
 
-                    // Build the relationship details
-                    $relationshipDetails = [
-                        'model'       => $requestData['relationship_model_'.$relationship],
-                        'table'       => $requestData['relationship_table_'.$relationship],
-                        'type'        => $requestData['relationship_type_'.$relationship],
-                        'column'      => $relationship_column,
-                        'key'         => $requestData['relationship_key_'.$relationship],
-                        'label'       => $requestData['relationship_label_'.$relationship],
-                        'pivot_table' => $requestData['relationship_pivot_table_'.$relationship],
-                        'pivot'       => ($requestData['relationship_type_'.$relationship] == 'belongsToMany') ? '1' : '0',
-                        'taggable'    => isset($requestData['relationship_taggable_'.$relationship]) ? $requestData['relationship_taggable_'.$relationship] : '0',
-                    ];
+
+                    if ($requestData['relationship_type_'.$relationship] == 'oneInChain'){
+                        $relationshipDetails = [
+                            'model'       => $requestData['relationship_chain_model_'.$relationship],
+                            'table'       => $requestData['relationship_chain_table_'.$relationship],
+                            'type'        => $requestData['relationship_type_'.$relationship],
+                            'column'      => $relationship_column,
+                            'key'         => $requestData['relationship_keyChain_'.$relationship],
+                            'label'       => $requestData['relationship_chain_label_'.$relationship],
+                            'pivot_table' => $requestData['relationship_pivot_table_'.$relationship],
+                            'pivot'       => '1',
+                            'taggable'    => isset($requestData['relationship_taggable_'.$relationship]) ? $requestData['relationship_taggable_'.$relationship] : '0',
+                        ];
+                    }
+                    else{
+                        // Build the relationship details
+                        $relationshipDetails = [
+                            'model'       => $requestData['relationship_model_'.$relationship],
+                            'table'       => $requestData['relationship_table_'.$relationship],
+                            'type'        => $requestData['relationship_type_'.$relationship],
+                            'column'      => $relationship_column,
+                            'key'         => $requestData['relationship_key_'.$relationship],
+                            'label'       => $requestData['relationship_label_'.$relationship],
+                            'pivot_table' => $requestData['relationship_pivot_table_'.$relationship],
+                            'pivot'       => ($requestData['relationship_type_'.$relationship] == 'belongsToMany') ? '1' : '0',
+                            'taggable'    => isset($requestData['relationship_taggable_'.$relationship]) ? $requestData['relationship_taggable_'.$relationship] : '0',
+                        ];
+                    }
 
                     $requestData['field_details_'.$relationship] = json_encode($relationshipDetails);
                 }
