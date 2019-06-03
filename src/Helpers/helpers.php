@@ -135,3 +135,14 @@ if (!function_exists('add_modal_scripts')) {
         return $script;
     }
 }
+
+if (!function_exists('classes_exists')) {
+    function classes_exists($classes)
+    {
+        foreach($classes as $class){
+            if (!class_exists($class))
+                return false;
+        }
+        return true;
+    }
+}
