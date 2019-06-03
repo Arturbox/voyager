@@ -87,13 +87,14 @@ if (!function_exists('clear_migration_after_table_delete')) {
 if (!function_exists('rename_model')) {
     function rename_model($collection, $table_info)
     {
-
-        $tableName = preg_replace('/s$/', '', $table_info['oldName']);
-
-        return $collection->map(function ($value) use ($tableName) {
+        $oldName = preg_replace('/s$/', '', $table_info['oldName']);
+        $newName = preg_replace('/s$/', '', $table_info['name']);
+        return $collection->map(function ($value) use ($oldName,$newName) {
             /*Checking statement, if there is a model name , wich contains a table name with uppercase, then renaming the model name to new name*/
-            if (ucwords($tableName . '.php') === $value->getFilename()) {
-                File::move($value->getPath() . '/' . $value->getFilename(), $value->getPath() . '/' . ucwords($tableName . '.php'));
+            if (ucwords($oldName . '.php') === $value->getFilename()) {
+                $content = preg_replace('/(class) (.*?) /i','$1 '.ucwords($newName).' ', $value->getContents());
+                File::put($value->getPath() . '/' . $value->getFilename(), $content);
+                File::move($value->getPath() . '/' . $value->getFilename(), $value->getPath() . '/' . ucwords($newName . '.php'));
             }
         });
     }
@@ -132,15 +133,5 @@ if (!function_exists('add_modal_scripts')) {
                 $script .= add_modal_scripts($filter->children);
         }
         return $script;
-    }
-
-    if (!function_exists('classes_exists')) {
-        function classes_exists(array $classes){
-            foreach ($classes as $class){
-                if (!class_exists($class))
-                    return false;
-            }
-            return true;
-        }
     }
 }
