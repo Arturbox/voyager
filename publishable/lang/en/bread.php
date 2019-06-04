@@ -49,5 +49,7 @@ return [
     'url_slug'               => 'URL Slug (must be unique)',
     'url_slug_ph'            => 'URL slug (ex. posts)',
     'filter'                 => 'Filters',
-    'create_filter'          => 'Add filter'
+    'create_filter'          => 'Add filter',
+    'smart_table'            => 'Smart Table',
+    'summary_table'          => 'Summary Table'
 ];

@@ -104,4 +104,6 @@ return [
     'restore_confirm'        => 'Yes',
     'order'                  => 'Order',
     'more'                   => 'More',
+    'smart_table'            => 'Smart Table',
+    'summary_table'          => 'Summary Tables',
 ];

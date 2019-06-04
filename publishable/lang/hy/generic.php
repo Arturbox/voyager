@@ -104,4 +104,6 @@ return [
     'restore_confirm'        => 'Այո',
     'order'                  => 'Հերթականություն',
     'more'                   => 'Ավելին',
+    'smart_table'            => 'Բանաձևեր',
+    'summary_table'          => 'Աղյուսակներ',
 ];

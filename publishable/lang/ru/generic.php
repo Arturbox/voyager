@@ -102,4 +102,6 @@ return [
     'restore_confirm'        => 'Да',
     'more'                   => 'Больше',
     'order'                  => 'Сортировка',
+    'smart_table'            => 'Формулы',
+    'summary_table'          => 'Суммирующая таблица',
 ];

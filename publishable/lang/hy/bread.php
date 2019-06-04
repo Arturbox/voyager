@@ -48,4 +48,6 @@ return [
     'updated_order'          => 'Հաջորդականությունը հաջողությամբ թարմացվել է:',
     'url_slug'               => 'URL Slug (պետք է լինի)',
     'url_slug_ph'            => 'URL slug (ex. գրառում)',
+    'smart_table'            => 'Պատրաստել բանաձևերի աղյուսակ',
+    'summary_table'          => 'Հաշվարկային աղյուսակ'
 ];

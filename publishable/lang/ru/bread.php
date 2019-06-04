@@ -46,4 +46,6 @@ return [
     'updated_order'          => 'Order updated successfully',
     'url_slug'               => 'URL Slug (должен быть уникальным)',
     'url_slug_ph'            => 'URL slug (например, posts)',
+    'smart_table'            => 'Умная таблица',
+    'summary_table'          => 'Суммирующая таблица'
 ];
