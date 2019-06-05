@@ -28,6 +28,10 @@ class DataType extends Model
         'description',
         'generate_permissions',
         'show_filters',
+        'filter_browse',
+        'filter_read',
+        'filter_update',
+        'filter_add',
         'server_side',
         'order_column',
         'order_display_column',
@@ -70,7 +74,7 @@ class DataType extends Model
     {
         return $this->hasMany(Voyager::modelClass('DataRow'))->orderBy('order', 'DESC')->first();
     }
-    
+
     public function setGeneratePermissionsAttribute($value)
     {
         $this->attributes['generate_permissions'] = $value ? 1 : 0;
@@ -86,13 +90,33 @@ class DataType extends Model
         $this->attributes['show_filters'] = $value ? 1 : 0;
     }
 
+    public function setFilterBrowseAttribute($value)
+    {
+        $this->attributes['filter_browse'] = $value ? 1 : 0;
+    }
+
+    public function setFilterReadAttribute($value)
+    {
+        $this->attributes['filter_read'] = $value ? 1 : 0;
+    }
+
+    public function setFilterUpdateAttribute($value)
+    {
+        $this->attributes['filter_update'] = $value ? 1 : 0;
+    }
+
+    public function setFilterAddAttribute($value)
+    {
+        $this->attributes['filter_add'] = $value ? 1 : 0;
+    }
+
     public function updateDataType($requestData, $throw = false)
     {
         try {
             DB::beginTransaction();
 
             // Prepare data
-            foreach (['generate_permissions', 'server_side','show_filters'] as $field) {
+            foreach (['generate_permissions', 'server_side','show_filters','filter_browse','filter_read','filter_update','filter_add'] as $field) {
                 if (!isset($requestData[$field])) {
                     $requestData[$field] = 0;
                 }

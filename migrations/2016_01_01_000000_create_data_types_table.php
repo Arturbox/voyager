@@ -24,6 +24,10 @@ class CreateDataTypesTable extends Migration
             $table->string('description')->nullable();
             $table->boolean('generate_permissions')->default(false);
             $table->boolean('show_filters')->default(false);
+            $table->boolean('filter_browse')->default(false);
+            $table->boolean('filter_read')->default(false);
+            $table->boolean('filter_update')->default(false);
+            $table->boolean('filter_add')->default(false);
             $table->timestamps();
         });
 
