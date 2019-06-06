@@ -57,7 +57,7 @@ class DataFilter extends Model
 
     public function parentId()
     {
-        return $this->belongsTo(self::class);
+        return $this->belongsTo(self::class, 'parent_id');
     }
 
 

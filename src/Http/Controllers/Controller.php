@@ -44,6 +44,7 @@ abstract class Controller extends BaseController
     public function insertUpdateData($request, $slug, $rows, $data)
     {
         $multi_select = [];
+        $multi_select_Chain = [];
 
         /*
          * Prepare Translations and Transform data
@@ -58,14 +59,14 @@ abstract class Controller extends BaseController
             if (!$request->hasFile($row->field) && !$request->has($row->field) && $row->type !== 'checkbox') {
                 // if the field is a belongsToMany relationship, don't remove it
                 // if no content is provided, that means the relationships need to be removed
-                if ((isset($row->details->type) && $row->details->type !== 'belongsToMany') || $row->field !== 'user_belongsto_role_relationship') {
+                if ((isset($row->details->type) && $row->details->type !== 'belongsToMany' && $row->details->type !== 'oneInChain') || $row->field !== 'user_belongsto_role_relationship') {
                     continue;
                 }
             }
 
             $content = $this->getContentBasedOnType($request, $slug, $row, $row->details);
 
-            if ($row->type == 'relationship' && $row->details->type != 'belongsToMany') {
+            if (($row->type == 'relationship' && $row->details->type != 'belongsToMany') || ($row->type == 'relationship' && $row->details->type != 'oneInChain')  ) {
                 $row->field = @$row->details->column;
             }
 
@@ -106,7 +107,12 @@ abstract class Controller extends BaseController
             if ($row->type == 'relationship' && $row->details->type == 'belongsToMany') {
                 // Only if select_multiple is working with a relationship
                 $multi_select[] = ['model' => $row->details->model, 'content' => $content, 'table' => $row->details->pivot_table];
-            } else {
+            }
+            elseif ($row->type == 'relationship' && $row->details->type == 'oneInChain'){
+                // Only if select_multiple is working with a relationship
+                $multi_select_Chain[] = ['model' => $row->details->model, 'content' => $content, 'table' => $row->details->pivot_table];
+            }
+            else {
                 $data->{$row->field} = $content;
             }
         }
@@ -120,6 +126,24 @@ abstract class Controller extends BaseController
 
         foreach ($multi_select as $sync_data) {
             $data->belongsToMany($sync_data['model'], $sync_data['table'])->sync($sync_data['content']);
+        }
+        if (!empty($multi_select_Chain)){
+            foreach ($multi_select_Chain as $sync_data) {
+                $columns = \DB::select('SHOW COLUMNS FROM '.$sync_data['table']);
+                \DB::table($sync_data['table'])->where($columns[0]->Field,$data->id)->delete();
+                $insert = [];
+                for ($i = 0;$i<count($sync_data['content']);$i++){
+                    $save = true;
+                    $insert[$columns[0]->Field] = $data->id;
+                    for ($j = 0;$j<count($sync_data['content'][$i]);$j++){
+                        if (!(int) $sync_data['content'][$i][$j])
+                            $save = false;
+                        $insert[$columns[$j+1]->Field] = $sync_data['content'][$i][$j];
+                    }
+                    if ($save)
+                        \DB::table($sync_data['table'])->insert($insert);
+                }
+            }
         }
 
         //add saving data in activity log data
