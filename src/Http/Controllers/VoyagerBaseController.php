@@ -42,8 +42,8 @@ class VoyagerBaseController extends Controller
 
         $getter = $dataType->server_side ? 'paginate' : 'get';
 
-        if ($request->get('type') == 'selectFilter')
-            $selectFilter = (object) ['type' => $request->get('type'), 'tables' => $request->except('type') ];
+
+        $selectFilter = (object) ['type' => $request->get('type'), 'tables' => $request->except('type') ];
 
         $search = (object) ['value' => $request->get('s'), 'key' => $request->get('key'), 'filter' => $request->get('filter')];
 
@@ -170,7 +170,8 @@ class VoyagerBaseController extends Controller
             'isServerSide',
             'isShowFilters',
             'defaultSearchKey',
-            'dataFilters'
+            'dataFilters',
+            'selectFilter'
         ));
     }
 
