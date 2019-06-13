@@ -111,9 +111,14 @@ class VoyagerBaseController extends Controller
                 $dataFilterSelected = Voyager::model('DataFilter')->where('id', '=', $k)->first();
                 if ($dataFilterSelected->details->type == "belongsToMany"){
                     foreach ($dataTypeContent as $key => &$data){
-                        $relationKey = $data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()->pivot->getRelatedKey();
-                        if (!$data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->where($relationKey,'=',$value)->get()->count())
+                        if ($data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()){
+                            $relationKey = $data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()->pivot->getRelatedKey();
+                            if (!$data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->where($relationKey,'=',$value)->get()->count()) {
+                                unset($dataTypeContent[$key]);
+                            }
+                        } else {
                             unset($dataTypeContent[$key]);
+                        }
                     }
                 }
                 elseif ($dataFilterSelected->details->type == "belongsTo"){
@@ -244,6 +249,8 @@ class VoyagerBaseController extends Controller
 
         $dataType = Voyager::model('DataType')->where('slug', '=', $slug)->first();
 
+        $dataFilters = Voyager::model('DataFilter')->where('data_type_id', $dataType->id )->orderBy('order')->get();
+
         $dataTypeContent = (strlen($dataType->model_name) != 0)
             ? app($dataType->model_name)->findOrFail($id)
             : DB::table($dataType->name)->where('id', $id)->first(); // If Model doest exist, get data from table name
@@ -271,7 +278,7 @@ class VoyagerBaseController extends Controller
             $view = "voyager::$slug.edit-add";
         }
 
-        return Voyager::view($view, compact('dataType', 'dataTypeContent', 'isModelTranslatable'));
+        return Voyager::view($view, compact('dataType', 'dataTypeContent', 'isModelTranslatable', 'dataFilters'));
     }
 
     // POST BR(E)AD
@@ -329,6 +336,9 @@ class VoyagerBaseController extends Controller
 
         $dataType = Voyager::model('DataType')->where('slug', '=', $slug)->first();
 
+        //Get data filters
+        $dataFilters = Voyager::model('DataFilter')->where('data_type_id', $dataType->id )->orderBy('order')->get();
+
         // Check permission
         $this->authorize('add', app($dataType->model_name));
 
@@ -356,7 +366,7 @@ class VoyagerBaseController extends Controller
             $view = "voyager::$slug.edit-add";
         }
 
-        return Voyager::view($view, compact('dataType', 'dataTypeContent', 'isModelTranslatable'));
+        return Voyager::view($view, compact('dataType', 'dataTypeContent', 'isModelTranslatable', 'dataFilters'));
     }
 
     /**
