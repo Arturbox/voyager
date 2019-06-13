@@ -16,6 +16,8 @@ use TCG\Voyager\Events\BreadUpdated;
 use TCG\Voyager\Facades\Voyager;
 use TCG\Voyager\Models\DataFilter;
 use TCG\Voyager\Models\DataRow;
+use TCG\Voyager\Models\DataTable;
+use TCG\Voyager\Models\DataTableRows;
 use TCG\Voyager\Models\DataType;
 use TCG\Voyager\Models\Permission;
 
@@ -459,6 +461,38 @@ class VoyagerBreadController extends Controller
             if (isset($filter->children)) {
                 $this->orderFilter($filter->children, $item->id);
             }
+        }
+    }
+
+    public function getSmartRelations(Request $request)
+    {
+        $dataType = Voyager::model('DataType')->whereName($request->main_table)->first();
+        $dataType2 = Voyager::model('DataType')->whereName($request->selected_table)->first();
+        $relations = $dataType2->rows->where('type','relationship')->map(function ($item1) use ($dataType)  {
+            $fields = $dataType->rows->where('type','relationship')->pluck('details')->pluck('column','table')->toArray();
+            if (array_key_exists($item1->details->table,$fields))
+            {
+                return [$fields[$item1->details->table] => $item1->details->table];
+            }
+        });
+        return json_encode(['relations' => $relations->toArray(),'id' => $request->id]);
+    }
+
+    public function saveSmartTable(Request $request){
+        try{
+            $dataTable = DataTable::find($request->data_table_id);
+            $tables = json_encode(['groupKeys' => $request->table]);
+            $dataTable->details = $tables;
+            $dataTable->save();
+            return back()->with([
+                'message'    => 'Successfully Saved',
+                'alert-type' => 'success',
+            ]);
+        }catch (Exception $e){
+            return back()->with([
+                'message'    => 'Error creating new filter: '.$e->getMessage(),
+                'alert-type' => 'error',
+            ]);
         }
     }
 }
