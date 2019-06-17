@@ -133,7 +133,8 @@ class VoyagerBreadController extends Controller
         $tables = SchemaManager::listTableNames();
         $dataTypeRelationships = Voyager::model('DataRow')->where('data_type_id', '=', $dataType->id)->where('type', '=', 'relationship')->get();
 
-        return Voyager::view('voyager::tools.bread.edit-add', compact('dataType', 'fieldOptions', 'isModelTranslatable', 'tables', 'dataTypeRelationships'));
+        $dataTableValid = DataTable::where('data_type_id',$dataType->id)->get();
+        return Voyager::view('voyager::tools.bread.edit-add', compact('dataType', 'fieldOptions', 'isModelTranslatable', 'tables', 'dataTypeRelationships','dataTableValid'));
     }
 
     /**
@@ -464,7 +465,7 @@ class VoyagerBreadController extends Controller
         }
     }
 
-    public function getSmartRelations(Request $request)
+    public function getRelation(Request $request)
     {
         $dataType = Voyager::model('DataType')->whereName($request->main_table)->first();
         $dataType2 = Voyager::model('DataType')->whereName($request->selected_table)->first();
