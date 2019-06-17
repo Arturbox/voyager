@@ -28,6 +28,7 @@ class CreateDataTypesTable extends Migration
             $table->boolean('filter_read')->default(false);
             $table->boolean('filter_update')->default(false);
             $table->boolean('filter_add')->default(false);
+            $table->boolean('child_redirect')->default(false);
             $table->timestamps();
         });
 
