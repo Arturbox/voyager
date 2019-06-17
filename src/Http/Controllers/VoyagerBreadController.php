@@ -133,7 +133,7 @@ class VoyagerBreadController extends Controller
         $isModelTranslatable = is_bread_translatable($dataType);
         $tables = SchemaManager::listTableNames();
         $dataTypeRelationships = Voyager::model('DataRow')->where('data_type_id', '=', $dataType->id)->where('type', '=', 'relationship')->get();
-        
+
 
 
 
@@ -473,7 +473,7 @@ class VoyagerBreadController extends Controller
      *
      * @param Request $request
      */
-    public function addSmart(Request $request)
+    public function saveSmartTable(Request $request)
     {
         try {
             DB::beginTransaction();
@@ -638,7 +638,7 @@ class VoyagerBreadController extends Controller
             DB::beginTransaction();
             // GET THE DataType based on the slug
             $dataType = Voyager::model('DataType')->where('slug', '=', $request->input('slug'))->first();
-            
+
             if ($dataTable = $dataType->tables()->where('id', $request->input('table_id'))->where('data_type_id',$dataType->id )->first()){
                 $rows = [];
                 $dataRows = new DataTableRows();
