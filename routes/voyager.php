@@ -123,8 +123,16 @@ Route::group(['as' => 'voyager.'], function () {
             Route::post('filter', ['uses' => $namespacePrefix.'VoyagerBreadController@addFilter',  'as' => 'filter']);
             Route::delete('delete_filter/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@deleteFilter',  'as' => 'delete_filter']);
             Route::post('order_filter', ['uses' => $namespacePrefix.'VoyagerBreadController@update_order',  'as' => 'order_filter']);
+
+            Route::put('dataTable/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@updateDataTable',  'as' => 'updateDataTable']);
+
+
             Route::post('getSmartRelations', ['uses' => $namespacePrefix.'VoyagerBreadController@getSmartRelations',  'as' => 'getSmartRelations']);
             Route::post('saveSmartTable', ['uses' => $namespacePrefix.'VoyagerBreadController@saveSmartTable',  'as' => 'saveSmartTable']);
+//
+            Route::post('add_smart', ['uses' => $namespacePrefix.'VoyagerBreadController@addSmart',  'as' => 'add_smart']);
+            Route::post('save_data', ['uses' => $namespacePrefix.'VoyagerBreadController@saveData',  'as' => 'save_data']);
+            Route::post('column_data', ['uses' => $namespacePrefix.'VoyagerBreadController@columnData',  'as' => 'column_data']);
         });
 
         // Database Routes

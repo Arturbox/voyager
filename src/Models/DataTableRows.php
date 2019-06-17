@@ -11,11 +11,13 @@ class DataTableRows extends Model
 
     protected $translatable = ['name'];
 
+    protected $fillable = ['data_table_id','name','value'];
+
     protected $table = 'data_table_rows';
 
     protected $guarded = [];
 
-    protected $timestamps = false;
+    public $timestamps = false;
 
     public function rowBefore()
     {

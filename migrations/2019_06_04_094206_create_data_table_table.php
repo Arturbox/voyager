@@ -16,6 +16,7 @@ class CreateDataTablesTable extends Migration
         Schema::create('data_tables', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('data_type_id')->unsigned();
+            $table->string('name');
             $table->integer('type');
             $table->boolean('browse')->default(true);
             $table->boolean('read')->default(true);

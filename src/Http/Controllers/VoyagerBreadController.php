@@ -15,11 +15,12 @@ use TCG\Voyager\Events\BreadDeleted;
 use TCG\Voyager\Events\BreadUpdated;
 use TCG\Voyager\Facades\Voyager;
 use TCG\Voyager\Models\DataFilter;
-use TCG\Voyager\Models\DataRow;
 use TCG\Voyager\Models\DataTable;
 use TCG\Voyager\Models\DataTableRows;
+use TCG\Voyager\Models\DataRow;
 use TCG\Voyager\Models\DataType;
 use TCG\Voyager\Models\Permission;
+use TCG\Voyager\Translator\Collection;
 
 class VoyagerBreadController extends Controller
 {
@@ -132,9 +133,11 @@ class VoyagerBreadController extends Controller
         $isModelTranslatable = is_bread_translatable($dataType);
         $tables = SchemaManager::listTableNames();
         $dataTypeRelationships = Voyager::model('DataRow')->where('data_type_id', '=', $dataType->id)->where('type', '=', 'relationship')->get();
+        
 
-        $dataTableValid = DataTable::where('data_type_id',$dataType->id)->get();
-        return Voyager::view('voyager::tools.bread.edit-add', compact('dataType', 'fieldOptions', 'isModelTranslatable', 'tables', 'dataTypeRelationships','dataTableValid'));
+
+
+        return Voyager::view('voyager::tools.bread.edit-add', compact('dataType', 'fieldOptions', 'isModelTranslatable', 'tables', 'dataTypeRelationships'));
     }
 
     /**
@@ -449,7 +452,6 @@ class VoyagerBreadController extends Controller
     }
 
 
-
     private function orderFilter($filters, $parentId)
     {
         foreach ($filters as $index => $filter) {
@@ -465,35 +467,197 @@ class VoyagerBreadController extends Controller
         }
     }
 
-    public function getRelation(Request $request)
-    {
-        $dataType = Voyager::model('DataType')->whereName($request->main_table)->first();
-        $dataType2 = Voyager::model('DataType')->whereName($request->selected_table)->first();
-        $relations = $dataType2->rows->where('type','relationship')->map(function ($item1) use ($dataType)  {
-            $fields = $dataType->rows->where('type','relationship')->pluck('details')->pluck('column','table')->toArray();
-            if (array_key_exists($item1->details->table,$fields))
-            {
-                return [$fields[$item1->details->table] => $item1->details->table];
-            }
-        });
-        return json_encode(['relations' => $relations->toArray(),'id' => $request->id]);
-    }
 
-    public function saveSmartTable(Request $request){
-        try{
-            $dataTable = DataTable::find($request->data_table_id);
-            $tables = json_encode(['groupKeys' => $request->table]);
-            $dataTable->details = $tables;
-            $dataTable->save();
+    /**
+     * Add Relationship.
+     *
+     * @param Request $request
+     */
+    public function addSmart(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            $dataTable = new DataTable();
+            $dataTable->data_type_id = $request->input('data_type_id');
+            if (!$dataTable->save()) {
+                return back()->with([
+                    'message'    => 'Error saving new smart table',
+                    'alert-type' => 'error',
+                ]);
+            }
+            DB::commit();
+
             return back()->with([
-                'message'    => 'Successfully Saved',
+                'message'    => 'Successfully created new smart table',
                 'alert-type' => 'success',
             ]);
-        }catch (Exception $e){
+        } catch (\Exception $e) {
+            DB::rollBack();
+
             return back()->with([
                 'message'    => 'Error creating new filter: '.$e->getMessage(),
                 'alert-type' => 'error',
             ]);
         }
     }
+
+//    public function addColumn(Request $request)
+//    {
+//        try {
+//            DB::beginTransaction();
+//            $dataType = Voyager::model('DataType')->where('slug', '=', $request->input('slug'))->first();
+//            if (!$dataTable->save()) {
+//                return back()->with([
+//                    'message'    => 'Error saving new smart table',
+//                    'alert-type' => 'error',
+//                ]);
+//            }
+//            DB::commit();
+//
+//            return back()->with([
+//                'message'    => 'Successfully created new smart table',
+//                'alert-type' => 'success',
+//            ]);
+//        } catch (\Exception $e) {
+//            DB::rollBack();
+//
+//            return back()->with([
+//                'message'    => 'Error creating new filter: '.$e->getMessage(),
+//                'alert-type' => 'error',
+//            ]);
+//        }
+//    }
+
+
+
+    public function columnData(Request $request)
+    {
+        // GET THE DataType based on the slug
+        $dataType = Voyager::model('DataType')->where('slug', '=', $request->input('slug'))->first();
+        $model = app($dataType->model_name);
+        $query = $model::select('*');
+        $column = $request->input('column');
+        $dataTypeContent = call_user_func([$query->latest($model::CREATED_AT), 'get']);
+        $columnData = [];
+        foreach ($dataTypeContent as $data){
+            $columnData[$data->id] =['id' => $data->id, 'value' => $data->translate(App()->getLocale())->{$column},'column' => $column,'header'=>$dataType->translate(App()->getLocale())->display_name_singular ];
+        }
+        exit(json_encode($columnData));
+    }
+
+
+    public function updateDataTable(Request $request,$id)
+    {
+        Voyager::canOrFail('browse_bread');
+
+        /* @var \TCG\Voyager\Models\DataType $dataType */
+        try {
+            $dataTable = Voyager::model('DataTable')->find($id);
+
+            $dataType = Voyager::model('DataType')->find($dataTable->id);
+
+            $dataTableRows = Voyager::model('DataTableRows')->where('data_table_id',$id)->get();
+
+            // Prepare Translations and Transform data
+            $translations = is_bread_translatable($dataTable)
+                ? $dataTable->prepareTranslations($request)
+                : [];
+
+
+            $res = $dataTable->updateDataTable($request->all(), true);
+            $data = $res
+                ? $this->alertSuccess(__('voyager::bread.success_update_bread', ['datatype' => $dataType->name]))
+                : $this->alertError(__('voyager::bread.error_updating_bread'));
+
+            if ($res) {
+                event(new BreadUpdated($dataType, $data));
+            }
+
+            // Save translations if applied
+            $dataTable->saveTranslations($translations);
+
+            foreach ($dataRows as $row){
+                foreach ($row->getTranslatableAttributes() as $attribute) {
+                    $request->request->add([ $attribute => $request->{'field_'.$attribute.'_'.$row->field} ]);
+                    $request->request->add([ $attribute.'_i18n' => $request->{'field_'.$attribute.'_'.$row->field.'_i18n'} ]);
+                }
+                $translationsRow = is_bread_translatable($row)
+                    ? $row->prepareTranslations($request)
+                    : [];
+                $row->saveTranslations($translationsRow);
+                unset($request->{'field_'.$attribute.'_'.$row->field});
+                unset($request->{'field_'.$attribute.'_'.$row->field.'_i18n'});
+            }
+
+
+
+            return redirect()->route('voyager.bread.index')->with($data);
+        } catch (Exception $e) {
+            return back()->with($this->alertException($e, __('voyager::generic.update_failed')));
+        }
+
+
+
+
+
+
+
+
+
+
+
+//        dd($request);
+//        try {
+//            DB::beginTransaction();
+//            // GET THE DataType based on the slug
+//            $dataType = Voyager::model('DataType')->where('slug', '=', $request->input('slug'))->first();
+//
+//            if ($dataTable = $dataType->tables()->where('id', $request->input('table_id'))->where('data_type_id',$dataType->id )->first()){
+//                $rows = [];
+//                $dataRows = new DataTableRows();
+//                foreach ($request->input('tableData') as $column=>$value){
+//                    $dataRows->name = $column;
+//                    $dataRows->data_table_id = $dataTable->id;
+//                    $rows[] =['name'=>$column,'data_table_id'=>$dataTable->id,'value'=> json_encode($value)];
+//                }
+//                $dataRows->insert($rows);
+//            }
+//            DB::commit();
+//            exit(true);
+//        } catch (\Exception $e) {
+//            DB::rollBack();
+//            exit(false);
+//        }
+//        exit(json_encode($columnData));
+    }
+
+    public function saveRelationData(Request $request)
+    {
+
+        try {
+            DB::beginTransaction();
+            // GET THE DataType based on the slug
+            $dataType = Voyager::model('DataType')->where('slug', '=', $request->input('slug'))->first();
+            
+            if ($dataTable = $dataType->tables()->where('id', $request->input('table_id'))->where('data_type_id',$dataType->id )->first()){
+                $rows = [];
+                $dataRows = new DataTableRows();
+                foreach ($request->input('tableData') as $column=>$value){
+                    $dataRows->name = $column;
+                    $dataRows->data_table_id = $dataTable->id;
+                    $rows[] =['name'=>$column,'data_table_id'=>$dataTable->id,'value'=> json_encode($value)];
+                }
+                $dataRows->insert($rows);
+            }
+            DB::commit();
+            exit(true);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            exit(false);
+        }
+        exit(json_encode($columnData));
+    }
+
+
+
 }

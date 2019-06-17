@@ -18,6 +18,8 @@ use TCG\Voyager\FormFields\HandlerInterface;
 use TCG\Voyager\Models\Category;
 use TCG\Voyager\Models\DataRow;
 use TCG\Voyager\Models\DataFilter;
+use TCG\Voyager\Models\DataTable;
+use TCG\Voyager\Models\DataTableRows;
 use TCG\Voyager\Models\DataType;
 use TCG\Voyager\Models\Menu;
 use TCG\Voyager\Models\MenuItem;
@@ -58,6 +60,8 @@ class Voyager
         'Category'    => Category::class,
         'DataRow'     => DataRow::class,
         'DataFilter'  => DataFilter::class,
+        'DataTable'   => DataTable::class,
+        'DataTableRows' => DataTableRows::class,
         'DataType'    => DataType::class,
         'Menu'        => Menu::class,
         'MenuItem'    => MenuItem::class,

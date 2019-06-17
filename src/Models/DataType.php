@@ -40,6 +40,11 @@ class DataType extends Model
         'details',
     ];
 
+    public function tables()
+    {
+        return $this->hasMany(Voyager::modelClass('DataTable'));
+    }
+    
     public function rows()
     {
         return $this->hasMany(Voyager::modelClass('DataRow'))->orderBy('order');
