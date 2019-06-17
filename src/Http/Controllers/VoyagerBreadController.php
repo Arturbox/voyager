@@ -659,5 +659,33 @@ class VoyagerBreadController extends Controller
     }
 
 
+    public function getSmartRelations(Request $request)
+    {
+        $dataType = Voyager::model('DataType')->whereName($request->main_table)->first();
+        $dataType2 = Voyager::model('DataType')->whereName($request->selected_table)->first();
+        $relations = $dataType2->rows->where('type','relationship')->map(function ($item1) use ($dataType)  {
+            $fields = $dataType->rows->where('type','relationship')->pluck('details')->pluck('column','table')->toArray();
+            if (array_key_exists($item1->details->table,$fields))
+            {
+                return [$fields[$item1->details->table] => $item1->details->table];
+            }
+        });
+        return json_encode(['relations' => $relations->toArray(),'id' => $request->id]);
+    }
+
+
+    public function saveSmartGroupTable(Request $request){
+        try{
+            $dataTable = DataTable::find($request->data_table_id);
+            $tables = ['groupKeys' => $request->table];
+            $dataTable->details = $tables;
+            $dataTable->save();
+            return redirect()->back();
+        }catch (Exception $e){
+            echo $e;
+        }
+    }
+
+
 
 }

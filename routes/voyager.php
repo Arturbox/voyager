@@ -130,6 +130,7 @@ Route::group(['as' => 'voyager.'], function () {
             Route::put('dataTable/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@updateDataTable',  'as' => 'updateDataTable']);
             Route::post('saveSmartTable', ['uses' => $namespacePrefix.'VoyagerBreadController@saveSmartTable',  'as' => 'saveSmartTable']);
             Route::post('getSmartRelationsCompare', ['uses' => $namespacePrefix.'VoyagerBreadController@getSmartRelationsCompare',  'as' => 'getSmartRelationsCompare']);
+            Route::post('saveSmartGroupTable', ['uses' => $namespacePrefix.'VoyagerBreadController@saveSmartGroupTable',  'as' => 'saveSmartGroupTable']);
 
 //
             Route::post('save_data', ['uses' => $namespacePrefix.'VoyagerBreadController@saveData',  'as' => 'save_data']);
