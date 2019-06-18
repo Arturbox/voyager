@@ -124,13 +124,12 @@ Route::group(['as' => 'voyager.'], function () {
             Route::delete('delete_filter/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@deleteFilter',  'as' => 'delete_filter']);
             Route::post('order_filter', ['uses' => $namespacePrefix.'VoyagerBreadController@update_order',  'as' => 'order_filter']);
 
-            Route::put('dataTable/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@updateDataTable',  'as' => 'updateDataTable']);
-
 
             Route::put('dataTable/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@updateDataTable',  'as' => 'updateDataTable']);
             Route::post('saveSmartTable', ['uses' => $namespacePrefix.'VoyagerBreadController@saveSmartTable',  'as' => 'saveSmartTable']);
             Route::post('getSmartRelationsCompare', ['uses' => $namespacePrefix.'VoyagerBreadController@getSmartRelationsCompare',  'as' => 'getSmartRelationsCompare']);
             Route::post('saveSmartGroupTable', ['uses' => $namespacePrefix.'VoyagerBreadController@saveSmartGroupTable',  'as' => 'saveSmartGroupTable']);
+            Route::post('addDataTableRelationshipColumn/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@addDataTableRelationshipColumn',  'as' => 'addDataTableRelationshipColumn']);
 
 //
             Route::post('save_data', ['uses' => $namespacePrefix.'VoyagerBreadController@saveData',  'as' => 'save_data']);

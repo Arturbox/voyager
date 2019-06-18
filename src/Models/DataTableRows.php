@@ -4,12 +4,13 @@ namespace TCG\Voyager\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use TCG\Voyager\Traits\Translatable;
+use TCG\Voyager\Facades\Voyager;
 
 class DataTableRows extends Model
 {
     use Translatable;
 
-    protected $translatable = ['name'];
+    protected $translatable = ['display_name'];
 
     protected $fillable = ['data_table_id','name','value'];
 
@@ -71,5 +72,12 @@ class DataTableRows extends Model
     public function getDetailsAttribute($value)
     {
         return json_decode(!empty($value) ? $value : '{}');
+    }
+
+    public function lastFilter()
+    {
+        if ($result = $this->hasMany(Voyager::modelClass('DataTable'), 'data_table_id')->orderBy('order', 'DESC')->first())
+            return $result->order;
+        return false;
     }
 }

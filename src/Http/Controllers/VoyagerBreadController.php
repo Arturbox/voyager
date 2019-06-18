@@ -479,6 +479,7 @@ class VoyagerBreadController extends Controller
             DB::beginTransaction();
             $dataTable = new DataTable();
             $dataTable->data_type_id = $request->input('data_type_id');
+            $dataTable->name = $request->input('name');
             if (!$dataTable->save()) {
                 return back()->with([
                     'message'    => 'Error saving new smart table',
@@ -491,6 +492,39 @@ class VoyagerBreadController extends Controller
                 'message'    => 'Successfully created new smart table',
                 'alert-type' => 'success',
             ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with([
+                'message'    => 'Error creating new filter: '.$e->getMessage(),
+                'alert-type' => 'error',
+            ]);
+        }
+    }
+
+    public function addDataTableRelationshipColumn(Request $request,$id)
+    {
+        try {
+            DB::beginTransaction();
+            $rowInfo = json_decode($request->input('row'));
+            $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $request->input('slug'))->first();
+
+            $dataTable =  Voyager::model('DataTable')->find($id);
+            $dataTableRows = new DataTableRows();
+
+            $dataTableRows->data_table_id = $dataTable->id;
+            $dataTableRows->field = $dataTypeRelation->slug.'_relationship_'.$request->input('field');
+            $dataTableRows->type ='relationship';
+            $dataTableRows->display_name = $rowInfo->value;
+            $dataTableRows->order = intval($request->input('order')) + 1;
+            $dataTableRows->details = ['type' => $request->input('type')];
+
+            if ($dataTableRows->save()){
+                DB::commit();
+                return back()->with([
+                    'message'    => 'Successfully created new smart table',
+                    'alert-type' => 'success',
+                ]);
+            }
         } catch (\Exception $e) {
             DB::rollBack();
 
@@ -554,7 +588,7 @@ class VoyagerBreadController extends Controller
         try {
             $dataTable = Voyager::model('DataTable')->find($id);
 
-            $dataType = Voyager::model('DataType')->find($dataTable->id);
+            $dataType = $dataTable->dataType()->first();
 
             $dataTableRows = Voyager::model('DataTableRows')->where('data_table_id',$id)->get();
 
@@ -564,7 +598,7 @@ class VoyagerBreadController extends Controller
                 : [];
 
 
-            $res = $dataTable->updateDataTable($request->all(), true);
+            $res = $dataTable->updateDataTable($dataType,$request->all(), true);
             $data = $res
                 ? $this->alertSuccess(__('voyager::bread.success_update_bread', ['datatype' => $dataType->name]))
                 : $this->alertError(__('voyager::bread.error_updating_bread'));
@@ -576,7 +610,7 @@ class VoyagerBreadController extends Controller
             // Save translations if applied
             $dataTable->saveTranslations($translations);
 
-            foreach ($dataRows as $row){
+            foreach ($dataTableRows as $row){
                 foreach ($row->getTranslatableAttributes() as $attribute) {
                     $request->request->add([ $attribute => $request->{'field_'.$attribute.'_'.$row->field} ]);
                     $request->request->add([ $attribute.'_i18n' => $request->{'field_'.$attribute.'_'.$row->field.'_i18n'} ]);
