@@ -124,6 +124,7 @@ Route::group(['as' => 'voyager.'], function () {
             Route::delete('delete_filter/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@deleteFilter',  'as' => 'delete_filter']);
             Route::post('order_filter', ['uses' => $namespacePrefix.'VoyagerBreadController@update_order',  'as' => 'order_filter']);
 
+            Route::post('redirect', ['uses' => $namespacePrefix.'VoyagerBaseController@redirect',  'as' => 'redirect']);
 
             Route::put('dataTable/{id}', ['uses' => $namespacePrefix.'VoyagerBreadController@updateDataTable',  'as' => 'updateDataTable']);
             Route::post('saveSmartTable', ['uses' => $namespacePrefix.'VoyagerBreadController@saveSmartTable',  'as' => 'saveSmartTable']);

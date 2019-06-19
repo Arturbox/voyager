@@ -4,7 +4,6 @@ namespace TCG\Voyager\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use TCG\Voyager\Actions\RestoreAction;
 use TCG\Voyager\Database\Schema\SchemaManager;
 use TCG\Voyager\Events\BreadDataAdded;
 use TCG\Voyager\Events\BreadDataDeleted;
@@ -12,6 +11,9 @@ use TCG\Voyager\Events\BreadDataUpdated;
 use TCG\Voyager\Events\BreadImagesDeleted;
 use TCG\Voyager\Facades\Voyager;
 use TCG\Voyager\Http\Controllers\Traits\BreadRelationshipParser;
+use Illuminate\Support\Facades\Session;
+use TCG\Voyager\Actions\ChildRedirectAction;
+use TCG\Voyager\Actions\RestoreAction;
 
 class VoyagerBaseController extends Controller
 {
@@ -106,45 +108,16 @@ class VoyagerBaseController extends Controller
         }
 
 
-        if (isset($selectFilter) && count($selectFilter->tables)>0){
-            foreach ($selectFilter->tables as $k => $value){
-                $dataFilterSelected = Voyager::model('DataFilter')->where('id', '=', $k)->first();
-                if ($dataFilterSelected->details->type == "belongsToMany"){
-                    foreach ($dataTypeContent as $key => &$data){
-                        if ($data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()){
-                            $relationKey = $data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()->pivot->getRelatedKey();
-                            if (!$data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->where($relationKey,'=',$value)->get()->count()) {
-                                unset($dataTypeContent[$key]);
-                            }
-                        } else {
-                            unset($dataTypeContent[$key]);
-                        }
-                    }
-                }
-                elseif ($dataFilterSelected->details->type == "belongsTo"){
-                    foreach ($dataTypeContent as $key => &$data){
-                        if ($data->{$dataFilterSelected->details->column} != $value){
-                            unset($dataTypeContent[$key]);
-                        }
-                    }
-                }
-                elseif ($dataFilterSelected->details->type == "hasOne"){
-                    foreach ($dataTypeContent as $key => &$data){
-                        if (!$data->hasOne($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
-                            unset($dataTypeContent[$key]);
-                        }
-                    }
-                }
-                elseif ($dataFilterSelected->details->type == "hasMany"){
-                    foreach ($dataTypeContent as $key => &$data){
-                        if (!$data->hasMany($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
-                            unset($dataTypeContent[$key]);
-                        }
-                    }
-                }
-            }
+        //Check if there are some fields in session for preview
+        if (Session::has($slug))
+        {
+            $this->relatedDataFiltering(Session::get($slug), $dataTypeContent,$slug);
         }
-
+        //Check if there is a filtered fields
+        elseif (isset($selectFilter) && count($selectFilter->tables)>0)
+        {
+            $this->relatedDataFiltering($selectFilter, $dataTypeContent);
+        }
 
 
 
@@ -158,6 +131,9 @@ class VoyagerBaseController extends Controller
         $defaultSearchKey = isset($dataType->default_search_key) ? $dataType->default_search_key : null;
 
         $view = 'voyager::bread.browse';
+        if(isset($dataType->child_redirect) || $dataType->child_redirect>0 ){
+            Voyager::addAction(ChildRedirectAction::class);
+        }
 
         if (view()->exists("voyager::$slug.browse")) {
             $view = "voyager::$slug.browse";
@@ -180,6 +156,53 @@ class VoyagerBaseController extends Controller
         ));
     }
 
+
+    public function relatedDataFiltering($select,$dataTypeContent,$slug = null)
+    {
+        foreach ($select->tables as $k => $value){
+            if (isset($select->type))
+            {
+                $dataFilterSelected = Voyager::model('DataFilter')->where('id', '=', $k)->first();
+            }else{
+                $dataFilterSelected = Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship')->where('details.table',$k)->first();
+            }
+            if ($dataFilterSelected->details->type == "belongsToMany"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if ($data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()){
+                        $relationKey = $data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()->pivot->getRelatedKey();
+                        if (!$data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->where($relationKey,'=',$value)->get()->count()) {
+                            unset($dataTypeContent[$key]);
+                        }
+                    } else {
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+            elseif ($dataFilterSelected->details->type == "belongsTo"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if ($data->{$dataFilterSelected->details->column} != $value){
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+            elseif ($dataFilterSelected->details->type == "hasOne"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if (!$data->hasOne($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+            elseif ($dataFilterSelected->details->type == "hasMany"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if (!$data->hasMany($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+        }
+
+
+    }
     //***************************************
     //                _____
     //               |  __ \
@@ -760,4 +783,23 @@ class VoyagerBaseController extends Controller
 
         return redirect()->route("voyager.{$dataType->slug}.index")->with($data);
     }
+
+    public function redirect(Request $request)
+    {
+        try{
+            $redirect = Voyager::model('DataType')->whereName($request->table)->pluck('details')->pluck('redirect')->first();
+            Session::forget($redirect);
+            $sessionData = ['tables' => [$request->table => $request->selectedId]];
+            Session::put($redirect,(object)$sessionData);
+
+            return redirect(route("voyager.".$redirect.".index"));
+        }catch(\Exception $e)
+        {
+            return back()->with([
+                'message' => 'Error displaying related fields: ' . $e->getMessage(),
+                'alert-type' => 'error',
+            ]);
+        }
+    }
+
 }
