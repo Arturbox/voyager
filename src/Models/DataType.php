@@ -32,6 +32,7 @@ class DataType extends Model
         'filter_read',
         'filter_update',
         'filter_add',
+        'child_redirect',
         'server_side',
         'order_column',
         'order_display_column',
@@ -44,7 +45,7 @@ class DataType extends Model
     {
         return $this->hasMany(Voyager::modelClass('DataTable'));
     }
-    
+
     public function rows()
     {
         return $this->hasMany(Voyager::modelClass('DataRow'))->orderBy('order');
@@ -115,13 +116,18 @@ class DataType extends Model
         $this->attributes['filter_add'] = $value ? 1 : 0;
     }
 
+    public function setChildRedirectAttribute($value)
+    {
+        $this->attributes['child_redirect'] = $value ? 1 : 0;
+    }
+
     public function updateDataType($requestData, $throw = false)
     {
         try {
             DB::beginTransaction();
 
             // Prepare data
-            foreach (['generate_permissions', 'server_side','show_filters','filter_browse','filter_read','filter_update','filter_add'] as $field) {
+            foreach (['generate_permissions', 'server_side','show_filters','filter_browse','filter_read','filter_update','filter_add', 'child_redirect'] as $field) {
                 if (!isset($requestData[$field])) {
                     $requestData[$field] = 0;
                 }
