@@ -28,6 +28,32 @@ class DataTable extends Model
     {
         return $this->hasMany(Voyager::modelClass('DataTableRows'))->orderBy('order');
     }
+    public function browseRows()
+    {
+        return $this->columns()->where('browse', 1);
+    }
+
+    public function readRows()
+    {
+        return $this->columns()->where('read', 1);
+    }
+
+    public function editRows()
+    {
+        return $this->columns()->where('edit', 1);
+    }
+
+    public function addRows()
+    {
+        return $this->columns()->where('add', 1);
+    }
+
+    public function deleteRows()
+    {
+        return $this->columns()->where('delete', 1);
+    }
+
+
     
     public function dataType(){
         return $this->belongsTo(Voyager::modelClass('DataType'));

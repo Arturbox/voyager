@@ -509,16 +509,36 @@ class VoyagerBreadController extends Controller
             $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $request->input('slug'))->first();
 
             $dataTable =  Voyager::model('DataTable')->find($id);
-            $dataTableRows = new DataTableRows();
 
-            $dataTableRows->data_table_id = $dataTable->id;
-            $dataTableRows->field = $dataTypeRelation->slug.'_relationship_'.$request->input('field');
-            $dataTableRows->type ='relationship';
-            $dataTableRows->display_name = $rowInfo->value;
-            $dataTableRows->order = intval($request->input('order')) + 1;
-            $dataTableRows->details = ['type' => $request->input('type')];
+            $dataTableRelationshipRows = new DataTableRows();
+            $dataTableRelationshipRows->data_table_id = $dataTable->id;
+            $dataTableRelationshipRows->field = $dataTypeRelation->slug.'_relationship_'.$request->input('field');
+            $dataTableRelationshipRows->type ='relationship';
+            $dataTableRelationshipRows->order = intval($request->input('order')) + 1;
 
-            if ($dataTableRows->save()){
+            if ($request->input('action') == "field"){
+                $row = $dataTypeRelation->rows->where('field',$request->input('field'))->first();
+                $dataTableRelationshipRows->display_name = $row->display_name;
+                $rowInfo = (object)['column'=>$request->input('field')];
+            }
+            elseif ($request->input('action') == "value"){
+                $rowInfo = json_decode($request->input('row'));
+                $dataTableRelationshipRows->display_name = $rowInfo->value;
+            }
+
+            $details = [
+                'type' => $request->input('type'),
+                'slug'=> $request->input('slug'),
+                'row_info'=>$rowInfo
+            ];
+
+            if ($request->input('dataTypeRow')){
+                $details['column'] = $request->input('dataTypeRow');
+            }
+
+            $dataTableRelationshipRows->details = $details;
+
+            if ($dataTableRelationshipRows->save()){
                 DB::commit();
                 return back()->with([
                     'message'    => 'Successfully created new smart table',
