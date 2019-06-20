@@ -693,7 +693,7 @@ class VoyagerBreadController extends Controller
     }
 
 
-    public function getSmartRelations(Request $request)
+    public function getSmartRelationsCompare(Request $request)
     {
         $dataType = Voyager::model('DataType')->whereName($request->main_table)->first();
         $dataType2 = Voyager::model('DataType')->whereName($request->selected_table)->first();

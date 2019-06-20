@@ -131,9 +131,9 @@ class VoyagerBaseController extends Controller
         $defaultSearchKey = isset($dataType->default_search_key) ? $dataType->default_search_key : null;
 
         $view = 'voyager::bread.browse';
-        if(isset($dataType->child_redirect) || $dataType->child_redirect>0 ){
+        if($dataType->child_redirect>0 && isset($dataType->details->redirect))
             Voyager::addAction(ChildRedirectAction::class);
-        }
+
 
         if (view()->exists("voyager::$slug.browse")) {
             $view = "voyager::$slug.browse";

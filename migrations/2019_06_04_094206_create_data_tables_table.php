@@ -17,7 +17,6 @@ class CreateDataTablesTable extends Migration
             $table->increments('id');
             $table->integer('data_type_id')->unsigned();
             $table->string('name');
-            $table->integer('type');
             $table->boolean('browse')->default(true);
             $table->boolean('read')->default(true);
             $table->boolean('edit')->default(true);
