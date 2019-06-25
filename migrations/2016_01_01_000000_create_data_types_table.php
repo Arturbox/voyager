@@ -56,7 +56,7 @@ class CreateDataTypesTable extends Migration
         Schema::create('data_filters', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('data_type_id')->unsigned();
-            $table->integer('parent_id')->nullable();
+            $table->integer('parent_id')->unsigned()->nullable();
             $table->string('display_field');
             $table->string('display_name');
             $table->boolean('required')->default(false);

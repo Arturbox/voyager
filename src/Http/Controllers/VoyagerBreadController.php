@@ -403,7 +403,7 @@ class VoyagerBreadController extends Controller
             $newFilter->display_field = $request->display_field;
             $newFilter->details = $Details;
             $newFilter->order = intval(Voyager::model('DataFilter')->lastFilter()) + 1;
-            $newFilter->parent_id = $request->parent_id??$request->parent_id!=null;
+            $newFilter->parent_id = $request->parent_id??$request->parent_id=null;
             if (!$newFilter->save()) {
                 return back()->with([
                     'message'    => 'Error saving new filter for '.$request->display_name,
