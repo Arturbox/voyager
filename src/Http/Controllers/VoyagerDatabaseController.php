@@ -72,6 +72,7 @@ class VoyagerDatabaseController extends Controller
             if (!is_array($request->table)) {
                 $table = json_decode($request->table, true);
             }
+            $table['name'] = preg_replace('/[^s]$/', '$0s', $table['name']);
             $table['options']['collate'] = config($conn.'.collation', 'utf8mb4_unicode_ci');
             $table['options']['charset'] = config($conn.'.charset', 'utf8mb4');
             $table = Table::make($table);
@@ -150,6 +151,7 @@ class VoyagerDatabaseController extends Controller
 
         $table = json_decode($request->table, true);
 
+        $table['name'] = preg_replace('/[^s]$/', '$0s', $table['name']);
         try {
             DatabaseUpdater::update($table);
             // TODO: synch BREAD with Table
