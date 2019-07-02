@@ -134,10 +134,166 @@ class VoyagerBreadController extends Controller
         $tables = SchemaManager::listTableNames();
         $dataTypeRelationships = Voyager::model('DataRow')->where('data_type_id', '=', $dataType->id)->where('type', '=', 'relationship')->get();
 
+        /********************/
+        if (isset($dataType->id)){
+            $dataTables = DataTable::where('data_type_id', '=',$dataType->id)->get();
+            $dataTables->map(function ($dataTable) use($dataType){
+                $dataTable->rowsByContent = $dataTable->browseRows;
+                $dataTableContent = strlen($dataTable->dataType->model_name) != 0 ? app($dataTable->dataType->model_name)->orderBy('order')->get() : call_user_func([DB::table($dataType->name), "get"]);
+               // $dataTableContent = call_user_func([DB::table($dataType->name), "get"]);
+                $dataTable->dataContent = $dataTableContent->map(function ($data) use ($dataTable) {
+                    return $this->mergeSmartSelectedValues($data,$dataTable->rowsByContent);
+                });
+                //dd($dataTable->dataContent);
+                $dataTable->mergedListRows = $dataTable->rowsByContent->map(function ($column,$i) {
+                    return $this->mergedSelectListInRows($column,$i);
+                })->collapse();
+                $dataTable->mergedListRows = $dataTable->mergedListRows->map(function ($column) use($dataTable) {
+                    return isset($column->details->relationship)?$this->fieldBindOtherField($column,$dataTable->rowsByContent):$column;
+                });
+                //add empty headers
+                $dataTable->nestHeaders = collect();
+                $dataTable->nestHeaders->push((object)[ 'title'=>'', 'colspan'=> $dataTable->rowsByContent->where('type' ,'!=','relationship')->count()]);
+                //add relationship headers
 
+               $dataTable->rowsByContent->where('type' ,'relationship')->groupBy('details.slug')->map(function ($item,$slug) use ($dataTable){
+                    $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $slug)->first();
+                    $dataTable->nestHeaders->push((object)[ 'title'=>$dataTypeRelation->translate(App()->getLocale())->display_name_singular, 'colspan'=> $item->count() ]);
+               });
 
+               $dataTable->hiddenRows = $dataTable->mergedListRows->map(function ($column,$key) use($dataTable){
+                       return isset($column->details->hidden)? '"#spreadsheet-'.$dataTable->id.' thead tr:not(.jexcel_nested) td[data-x='.$column->order.']"':false;
+                    })->filter(function ($column){
+                        return $column;
+               });
 
-        return Voyager::view('voyager::tools.bread.edit-add', compact('dataType', 'fieldOptions', 'isModelTranslatable', 'tables', 'dataTypeRelationships'));
+               if (isset($dataTable->details->groupKeys)){
+                    $groups = collect($dataTable->details->groupKeys)->map(function ($group){
+                        return $group->column;
+                    })->toArray();
+                   $dataByGroup = collect([]);
+                   $dataTable->dataContent->groupBy($groups)->recursiveGroups($dataTable->details->groupKeys,0,$dataTable->mergedListRows,$dataByGroup);
+                   $dataTable->dataContent = $dataByGroup;
+               }
+                $dataTable->showHiddenColumns = $dataTable->mergedListRows->map(function ($item,$key) use($dataTable){
+                    return '"#spreadsheet-'.$dataTable->id.' thead tr:not(.jexcel_nested) td[data-x='.$key.']"';
+                });
+                return $dataTable;
+            });
+        }
+        /********************/
+        return Voyager::view('voyager::tools.bread.edit-add',
+            compact('dataType',
+                'fieldOptions',
+                'isModelTranslatable',
+                'tables',
+                'dataTypeRelationships',
+                'dataTables'
+                ));
+    }
+
+    public function fieldBindOtherField($column,$columns){
+
+            $slug = $column->details->slug;
+            $dataType =  Voyager::model('DataType')->where('slug', '=', $slug)->first();
+            $dataTypeContent = strlen($dataType->model_name) != 0 ? app($dataType->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
+
+            $columnBind = $columns->where('field',$column->details->relationship);
+            $BindKey = $columnBind->keys()->first();
+            $slugBind = $columnBind->first()->details->slug;
+            $dataTypeBind = Voyager::model('DataType')->where('slug', '=', $slugBind)->first();
+            $dataTypeContentBind = strlen($dataTypeBind->model_name) != 0 ? app($dataTypeBind->model_name)->get() : call_user_func([DB::table($dataTypeBind->name), "get"]);
+
+            foreach ($dataTypeContentBind as $dataBind) {
+                $select = (object)['tables' => [$slugBind => $dataBind->id]];
+                $cloneDataTypeContent = clone $dataTypeContent;
+                $bindData[$dataBind->id] = $this->relatedDataFiltering($select, $cloneDataTypeContent, $slug)->map(function ($data) use ($column) {
+                    return ['id' => $data->id, 'name' => $data->translate(App()->getLocale())->{$column->details->row_info->column}];
+                });
+            }
+            $column->bindData = isset($bindData) ? collect($bindData) : collect([]);
+            if ($columnBind)
+                $column->order_relation = $BindKey;
+            return  $column;
+    }
+
+    public function mergedSelectListInRows($column,$i)
+    {
+            $array[$column->field] = (object)[
+                'type'=>$column->type != 'relationship'?$column->type:$column->details->type,
+                'display_name'=>$column->display_name,
+                'details'=>$column->details,
+                'order' =>$i,
+            ];
+            if ($column->type == 'relationship' &&  in_array($column->details->type,['dropdown','autocomplete'])){
+                $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $column->details->slug)->first();
+                $dataTypeRelationContent = strlen($dataTypeRelation->model_name) != 0 ? app($dataTypeRelation->model_name)->get() : call_user_func([DB::table($dataTypeRelation->name), "get"]);
+                $array[$column->field]->source = $dataTypeRelationContent->map(function ($attr) use($column){
+                    return  ['id'=>$attr->id,'name'=>$attr->translate(App()->getLocale())->{$column->details->row_info->column}];
+                });
+            }
+            return $array;
+    }
+
+    public function mergeSmartSelectedValues($data,$columns)
+    {
+        return $columns->map(function ($column) use ($data){
+            if ($data->{$column->field})
+                return [$column->field=>$data->{$column->field}];
+            elseif (isset($column->details->column) && $column->type == 'relationship')
+                return [$column->field=>$data->{$column->details->column}];
+            elseif($column->type == 'relationship' && isset($column->details->row_info->id)){
+                $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $column->details->slug)->first();
+                $data = strlen($dataTypeRelation->model_name) != 0
+                    ? app($dataTypeRelation->model_name)->where('id',$column->details->row_info->id)->first()
+                    : call_user_func([DB::table($dataTypeRelation->name), "get"]);
+                return [$column->field=>$data->{$column->details->row_info->column}];
+            }
+        })->collapse();
+    }
+
+    public function relatedDataFiltering($select,$dataTypeContent,$slug = null)
+    {
+        foreach ($select->tables as $k => $value){
+            if (isset($select->type))
+                $dataFilterSelected = Voyager::model('DataFilter')->where('id', '=', $k)->first();
+            else
+                $dataFilterSelected = Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship')->where('details.table',$k)->first();
+            if ($dataFilterSelected->details->type == "belongsToMany"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if ($data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()){
+                        $relationKey = $data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()->pivot->getRelatedKey();
+                        if (!$data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->where($relationKey,'=',$value)->get()->count()) {
+                            unset($dataTypeContent[$key]);
+                        }
+                    } else {
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+            elseif ($dataFilterSelected->details->type == "belongsTo"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if ($data->{$dataFilterSelected->details->column} != $value){
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+            elseif ($dataFilterSelected->details->type == "hasOne"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if (!$data->hasOne($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+            elseif ($dataFilterSelected->details->type == "hasMany"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if (!$data->hasMany($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+        }
+        return $dataTypeContent;
     }
 
     /**
@@ -542,7 +698,7 @@ class VoyagerBreadController extends Controller
             if (array_sum($result) ==  count($requestRow)){
                 DB::commit();
                 return back()->with([
-                    'message'    => 'Successfully created new smart table',
+                    'message'    => 'Successfully created new smart table Field',
                     'alert-type' => 'success',
                 ]);
             }
@@ -550,7 +706,7 @@ class VoyagerBreadController extends Controller
                 DB::rollBack();
 
                 return back()->with([
-                    'message'    => 'Error creating new filter: '.$e->getMessage(),
+                    'message'    => 'Error creating new Field: '.$e->getMessage(),
                     'alert-type' => 'error',
                 ]);
             }
@@ -682,8 +838,10 @@ class VoyagerBreadController extends Controller
     public function saveSmartGroupTable(Request $request){
         try{
             $dataTable = DataTable::find($request->data_table_id);
-            $tables = ['groupKeys' => $request->table];
-            $dataTable->details = $tables;
+            $groupKeys = collect($request->table)->map(function($info){
+                return json_decode($info);
+            })->toArray();
+            $dataTable->details = ['groupKeys' => $groupKeys ];
             $dataTable->save();
             return redirect()->back();
         }catch (Exception $e){
@@ -692,5 +850,48 @@ class VoyagerBreadController extends Controller
     }
 
 
+    public function saveSmartData(Request $request){
+//        try {
+//            DB::beginTransaction();
+             //GET THE DataType based on the slug
 
+            $dataTable = Voyager::model('DataTable')->find($request->input('table_id'));
+
+            $dataType = $dataTable->dataType()->first();
+            //delete
+            $delete = call_user_func([DB::table($dataType->name), "delete"]);
+
+            $tableRows = $request->data;
+        $j = 0;
+        foreach ($tableRows as $record){
+                $groupType = false;
+                if (isset($dataTable->details->groupKeys)){
+                    foreach ($dataTable->details->groupKeys as $groupp){
+                        $dataTypeGroup = Voyager::model('DataType')->where('name', '=', $groupp->dataType)->first();
+                        $dataTypeGroupContent = strlen($dataTypeGroup->model_name) != 0 ? app($dataTypeGroup->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
+                        if ($dataTypeGroupContent->where('name',$record[0])->first()) {
+                            $groupType = true;
+                            $groupData = $dataTypeGroupContent->where('name', $record[0])->first();
+                        }
+                    }
+                }
+                if (!$groupType){
+                    $j++;
+                    $data = new $dataType->model_name;
+                    $i = 0;
+                    foreach ($dataTable->browseRows as $column) {
+                        if ($column->type=="relationship" && isset($column->details->column))
+                            $data->{$column->details->column} = $record[$i];
+                        elseif ($column->type!="relationship")
+                            $data->{$column->field} = $record[$i];
+                        $i++;
+                    }
+                    if (isset($dataTable->details->groupKeys)){
+                        $data->{$groupp->column} = $groupData->id;
+                    }
+                    $data->order = $j;
+                    $data->save();
+                }
+            }
+    }
 }
