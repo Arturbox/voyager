@@ -77,6 +77,13 @@ class VoyagerDatabaseController extends Controller
             $table = Table::make($table);
             SchemaManager::createTable($table);
             if (isset($request->create_model) && $request->create_model == 'on') {
+                if (isset($request->create_migration) && $request->create_migration == 'on') {
+                    $params =  [
+                        'tables'=> $table['name'],
+                        '--no-interaction'=>true
+                    ];
+                    Artisan::call('migrate:generate', $params);
+                }
                 $modelNamespace = config('voyager.models.namespace', app()->getNamespace());
                 $params = [
                     'name' => $modelNamespace.Str::studly(Str::singular($table->name)),
@@ -85,13 +92,7 @@ class VoyagerDatabaseController extends Controller
                 if ($table->hasColumn('deleted_at')) {
                     $params['--softdelete'] = true;
                 }
-                if (isset($request->create_migration) && $request->create_migration == 'on') {
-                    $params['--migration'] = true;
-//                    Artisan::call('voyager:make:migration', [
-//                        'name'    => 'create_'.$table->name.'_table',
-//                        '--table' => $table->name,
-//                    ]);
-                }
+
                 if (isset($request->create_translation) && $request->create_translation == 'on') {
                     $params['--translation'] = $tableColumns;
                 }
@@ -99,10 +100,11 @@ class VoyagerDatabaseController extends Controller
                 Artisan::call('voyager:make:model', $params);
             }
             elseif (isset($request->create_migration) && $request->create_migration == 'on') {
-                Artisan::call('make:migration', [
-                    'name'    => 'create_'.$table->name.'_table',
-                    '--table' => $table->name,
-                ]);
+                $params =  [
+                    'tables'=> $table['name'],
+                    '--no-interaction'=>true
+                ];
+                Artisan::call('migrate:generate', $params);
             }
             event(new TableAdded($table));
             return redirect()
@@ -154,7 +156,12 @@ class VoyagerDatabaseController extends Controller
             // $this->cleanOldAndCreateNew($request->original_name, $request->name);
             event(new TableUpdated($table));
 
-            rename_migration(getAllMigrations(),['oldName' => $table['oldName'],'name' => $table['name']]);
+            delete_migration(getAllMigrations(),['oldName' => $table['oldName']]);
+            $params =  [
+                'tables'=> $table['name'],
+                '--no-interaction'=>true
+            ];
+            Artisan::call('migrate:generate', $params);
 
             rename_model(getAllModels(),['oldName' => $table['oldName'],'name' => $table['name']]);
 

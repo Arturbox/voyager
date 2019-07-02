@@ -119,6 +119,19 @@ if (!function_exists('rename_migration')) {
     }
 }
 
+if (!function_exists('delete_migration')) {
+    function delete_migration($collection, $table_info)
+    {
+        return $collection->map(function ($value) use ($table_info) {
+            /*Checking statement, if there is a migration name , wich contains a table old name, then reading content*/
+            if (preg_match("/" . $table_info['oldName'] . "/", $file = $value->getPathname())) {
+                unlink($file);
+                return true;
+            }
+        });
+    }
+}
+
 if (!function_exists('add_modal_scripts')) {
     function add_modal_scripts($dataFilters)
     {
