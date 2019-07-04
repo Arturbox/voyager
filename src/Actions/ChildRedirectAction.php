@@ -30,11 +30,12 @@ class ChildRedirectAction extends AbstractAction
             'class' => 'btn btn-sm btn-primary pull-right redirect',
             'style' => 'margin: 0px 5px 0px 1px; padding: 3px 9px;',
             'data-id' => $this->data->{$this->data->getKeyName()},
+            'id'      => 'redirect-'.$this->data->{$this->data->getKeyName()},
         ];
     }
 
     public function getDefaultRoute()
     {
-        return route('voyager.bread.redirect');
+        return 'javascript:;';
     }
 }

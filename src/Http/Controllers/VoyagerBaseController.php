@@ -744,12 +744,12 @@ class VoyagerBaseController extends Controller
         return redirect()->route("voyager.{$dataType->slug}.index")->with($data);
     }
 
-    public function redirect(Request $request)
+    public function redirect(Request $request,$id)
     {
         try{
             $redirect = Voyager::model('DataType')->whereName($request->table)->pluck('details')->pluck('redirect')->first();
             Session::forget($redirect);
-            $sessionData = ['tables' => [$request->table => $request->selectedId]];
+            $sessionData = ['tables' => [$request->table => $id]];
             Session::put($redirect,(object)$sessionData);
 
             return redirect(route("voyager.".$redirect.".index"));
