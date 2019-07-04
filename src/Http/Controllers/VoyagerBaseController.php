@@ -14,6 +14,8 @@ use TCG\Voyager\Http\Controllers\Traits\BreadRelationshipParser;
 use Illuminate\Support\Facades\Session;
 use TCG\Voyager\Actions\ChildRedirectAction;
 use TCG\Voyager\Actions\RestoreAction;
+use TCG\Voyager\Models\DataFilter;
+use TCG\Voyager\Models\DataTable;
 
 class VoyagerBaseController extends Controller
 {
@@ -110,16 +112,10 @@ class VoyagerBaseController extends Controller
 
         //Check if there are some fields in session for preview
         if (Session::has($slug))
-        {
-            $this->relatedDataFiltering(Session::get($slug), $dataTypeContent,$slug);
-        }
+            $dataTypeContent = DataFilter::relatedDataFiltering(Session::get($slug), $dataTypeContent,$slug);
         //Check if there is a filtered fields
         elseif (isset($selectFilter) && count($selectFilter->tables)>0)
-        {
-            $this->relatedDataFiltering($selectFilter, $dataTypeContent);
-        }
-
-
+            $dataTypeContent = DataFilter::relatedDataFiltering($selectFilter, $dataTypeContent);
 
         // Check if server side pagination is enabled
         $isServerSide = isset($dataType->server_side) && $dataType->server_side;
@@ -130,14 +126,25 @@ class VoyagerBaseController extends Controller
         // Check if a default search key is set
         $defaultSearchKey = isset($dataType->default_search_key) ? $dataType->default_search_key : null;
 
-        $view = 'voyager::bread.browse';
-        if($dataType->child_redirect>0 && isset($dataType->details->redirect))
+        if( isset($dataType->details->redirect) && $dataType->child_redirect > 0 )
             Voyager::addAction(ChildRedirectAction::class);
 
+        $view = 'voyager::bread.browse';
 
         if (view()->exists("voyager::$slug.browse")) {
             $view = "voyager::$slug.browse";
         }
+
+        /*********** SMART TABLE*********/
+        if ($dataTables = DataTable::where('data_type_id', '=',$dataType->id)->count()
+        ){
+            $dataTables = DataTable::where('data_type_id', '=',$dataType->id)->get();
+            $dataTables->map(function ($dataTable) use($dataType,$dataTypeContent){
+                return $dataTable->reverseBySmart($dataType,$dataTypeContent);
+            });
+            $view = 'voyager::bread.browse-smart';
+        }
+        /********************/
 
         return Voyager::view($view, compact(
             'dataType',
@@ -152,56 +159,9 @@ class VoyagerBaseController extends Controller
             'isShowFilters',
             'defaultSearchKey',
             'dataFilters',
-            'selectFilter'
+            'selectFilter',
+            'dataTables'
         ));
-    }
-
-
-    public function relatedDataFiltering($select,$dataTypeContent,$slug = null)
-    {
-        foreach ($select->tables as $k => $value){
-            if (isset($select->type))
-            {
-                $dataFilterSelected = Voyager::model('DataFilter')->where('id', '=', $k)->first();
-            }else{
-                $dataFilterSelected = Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship')->where('details.table',$k)->first();
-            }
-            if ($dataFilterSelected->details->type == "belongsToMany"){
-                foreach ($dataTypeContent as $key => &$data){
-                    if ($data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()){
-                        $relationKey = $data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()->pivot->getRelatedKey();
-                        if (!$data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->where($relationKey,'=',$value)->get()->count()) {
-                            unset($dataTypeContent[$key]);
-                        }
-                    } else {
-                        unset($dataTypeContent[$key]);
-                    }
-                }
-            }
-            elseif ($dataFilterSelected->details->type == "belongsTo"){
-                foreach ($dataTypeContent as $key => &$data){
-                    if ($data->{$dataFilterSelected->details->column} != $value){
-                        unset($dataTypeContent[$key]);
-                    }
-                }
-            }
-            elseif ($dataFilterSelected->details->type == "hasOne"){
-                foreach ($dataTypeContent as $key => &$data){
-                    if (!$data->hasOne($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
-                        unset($dataTypeContent[$key]);
-                    }
-                }
-            }
-            elseif ($dataFilterSelected->details->type == "hasMany"){
-                foreach ($dataTypeContent as $key => &$data){
-                    if (!$data->hasMany($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
-                        unset($dataTypeContent[$key]);
-                    }
-                }
-            }
-        }
-
-
     }
     //***************************************
     //                _____

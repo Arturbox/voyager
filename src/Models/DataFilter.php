@@ -89,4 +89,50 @@ class DataFilter extends Model
     {
         return json_decode(!empty($value) ? $value : '{}');
     }
+
+    public static function relatedDataFiltering($select,$dataTypeContent,$slug = null)
+    {
+        foreach ($select->tables as $k => $value){
+            if (isset($select->type))
+                $dataFilterSelected = Voyager::model('DataFilter')->where('id', '=', $k)->first();
+            else
+                $dataFilterSelected = Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship')->where('details.table',$k)->first();
+            if ($dataFilterSelected->details->type == "belongsToMany"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if ($data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()){
+                        $relationKey = $data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()->pivot->getRelatedKey();
+                        if (!$data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->where($relationKey,'=',$value)->get()->count()) {
+                            unset($dataTypeContent[$key]);
+                        }
+                    } else {
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+            elseif ($dataFilterSelected->details->type == "belongsTo"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if ($data->{$dataFilterSelected->details->column} != $value){
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+            elseif ($dataFilterSelected->details->type == "hasOne"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if (!$data->hasOne($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+            elseif ($dataFilterSelected->details->type == "hasMany"){
+                foreach ($dataTypeContent as $key => &$data){
+                    if (!$data->hasMany($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
+                        unset($dataTypeContent[$key]);
+                    }
+                }
+            }
+        }
+        return $dataTypeContent;
+    }
+
+
 }
