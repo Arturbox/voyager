@@ -80,7 +80,7 @@ class VoyagerDatabaseController extends Controller
             if (isset($request->create_model) && $request->create_model == 'on') {
                 if (isset($request->create_migration) && $request->create_migration == 'on') {
                     $params =  [
-                        'tables'=> $table['name'],
+                        'tables'=> $table->name,
                         '--no-interaction'=>true
                     ];
                     Artisan::call('migrate:generate', $params);
@@ -102,7 +102,7 @@ class VoyagerDatabaseController extends Controller
             }
             elseif (isset($request->create_migration) && $request->create_migration == 'on') {
                 $params =  [
-                    'tables'=> $table['name'],
+                    'tables'=> $table->name,
                     '--no-interaction'=>true
                 ];
                 Artisan::call('migrate:generate', $params);
