@@ -167,6 +167,8 @@ class VoyagerDatabaseController extends Controller
 
             rename_model(getAllModels(),['oldName' => $table['oldName'],'name' => $table['name']]);
 
+            DataType::updateDataTypeFields($table);
+
         } catch (Exception $e) {
             return back()->with($this->alertException($e))->withInput();
         }

@@ -185,6 +185,24 @@ class DataType extends Model
         return false;
     }
 
+    public static function updateDataTypeFields($table){
+
+        if ( $dataType = self::where('name', $table['oldName'])->first() )
+        {
+            // looking for changes in table name
+            if ($table['name'] !== $table['oldName']) {
+
+                $old_model_name = preg_replace('/s$/', '', $table['oldName']);
+                $new_model_name = ucwords(preg_replace('/s$/', '', $table['name']));
+
+                $dataType->name = $dataType->slug = $table['name'];
+                $dataType->model_name = str_ireplace($old_model_name, $new_model_name, $dataType->model_name);
+
+                return $dataType->save();
+            }
+        }
+    }
+
     public function fields($name = null)
     {
         if (is_null($name)) {
