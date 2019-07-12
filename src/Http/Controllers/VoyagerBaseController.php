@@ -51,7 +51,7 @@ class VoyagerBaseController extends Controller
 
         $search = (object) ['value' => $request->get('s'), 'key' => $request->get('key'), 'filter' => $request->get('filter')];
 
-        $dataFilters = Voyager::model('DataFilter')->where('data_type_id', $dataType->id )->where('parent_id','=',0)->orderBy('order')->get();
+        $dataFilters = Voyager::model('DataFilter')->where('data_type_id', $dataType->id )->where('parent_id','=',null)->orderBy('order')->get();
 
         $searchable = $dataType->server_side ? array_keys(SchemaManager::describeTable(app($dataType->model_name)->getTable())->toArray()) : '';
         $orderBy = $request->get('order_by', $dataType->order_column);
