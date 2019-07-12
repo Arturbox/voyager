@@ -114,7 +114,7 @@ class VoyagerBaseController extends Controller
         if (Session::has($slug))
             $dataTypeContent = DataFilter::relatedDataFiltering(Session::get($slug), $dataTypeContent,$slug);
         //Check if there is a filtered fields
-        elseif (isset($selectFilter) && count($selectFilter->tables)>0)
+        elseif (isset($selectFilter)  && $selectFilter->type  && count($selectFilter->tables)>0)
             $dataTypeContent = DataFilter::relatedDataFiltering($selectFilter, $dataTypeContent);
 
         // Check if server side pagination is enabled
