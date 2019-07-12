@@ -189,13 +189,28 @@ class DataTable extends Model
 
         //add empty headers
         $this->nestHeaders = collect();
-        $this->nestHeaders->push((object)[ 'title'=>'', 'colspan'=> $this->rowsByContent->where('type' ,'!=','relationship')->count()]);
-
+        $nestParent[] = $empty = (object)['title'=>'', 'colspan'=> $this->rowsByContent->where('type' ,'!=','relationship')->count()];
+        $nestChildren[] = clone $empty;
         //add relationship headers
-        $this->rowsByContent->where('type' ,'relationship')->groupBy('details.slug')->map(function ($item,$slug){
+        $this->rowsByContent->where('type' ,'relationship')->groupBy('details.slug')->map(function ($item,$slug) use (&$nestParent,&$nestChildren){
             $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $slug)->first();
-            $this->nestHeaders->push((object)[ 'title'=>$dataTypeRelation->translate(App()->getLocale())->display_name_singular, 'colspan'=> $item->count() ]);
+            $nestParent[] = (object)[ 'title'=>$dataTypeRelation->translate(App()->getLocale())->display_name_singular, 'colspan'=> $item->count() ];
+            if ($item->where('details.row_info.id')->count()){
+                $item->groupBy('details.row_info.id')->map(function ($itemm,$id) use($slug,&$nestChildren,$dataTypeRelation){
+                    $dataTypeRelationContent = strlen($dataTypeRelation->model_name) != 0 ? app($dataTypeRelation->model_name)->where('id',$id)->first() : call_user_func([DB::table($dataTypeRelation->name), "get"])->where('id',$id)->first();
+                    $nestChildren[] = [ 'title'=>$dataTypeRelationContent->translate(App()->getLocale())->{$itemm->first()->details->row_info->column}, 'colspan'=> $itemm->count() ];
+                });
+            }
+            else{
+                $nestChildren[0]->colspan = $nestChildren[0]->colspan+1;
+             //   dd($nestChildren[0]->colspan);
+            }
         });
+
+        //dd($nestChildren);
+        $this->nestHeaders->push($nestParent);
+        if (isset($nestChildren))
+            $this->nestHeaders->push($nestChildren);
 
         $this->hiddenRows = $this->mergedListRows->map(function ($column,$key){
             return isset($column->details->hidden)? '"#spreadsheet-'.$this->id.' thead tr:not(.jexcel_nested) td[data-x='.$column->order.']"':false;

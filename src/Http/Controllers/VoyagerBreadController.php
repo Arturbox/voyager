@@ -529,34 +529,42 @@ class VoyagerBreadController extends Controller
 
             $dataTypeRelationContent = strlen($dataTypeRelation->model_name) != 0 ? app($dataTypeRelation->model_name)->get() : call_user_func([DB::table($dataTypeRelation->name), "get"]);
 
-            $requestRow = $request->input('row') ?? $request->input('row') ?? [1];
-                foreach ($requestRow as $i => $id){
-                    $row = $dataTypeRelation->rows->where('field',$request->input('field'))->first();
-                    $order = intval($request->input('order'));
-                    $dataTableRelationshipRows = new DataTableRows();
-                    $dataTableRelationshipRows->data_table_id = $dataTable->id;
-                    $dataTableRelationshipRows->field = $dataTypeRelation->slug.'_relationship_'.$request->input('field');
-                    $dataTableRelationshipRows->type ='relationship';
-                    $dataTableRelationshipRows->display_name = $row->display_name;
-                    $dataTableRelationshipRows->order =  $order++;
-                    $rowInfo = (object)['column'=>$request->input('field')];
-                    $details = [
-                        'type' => $request->input('type'),
-                        'slug'=> $request->input('slug'),
-                        'row_info' => $rowInfo
-                    ];
-                    if ($request->input('dataTypeRow')){
-                        $details['column'] = $request->input('dataTypeRow')[$i];
+            $requestRow = $request->input('row') ? $request->input('row') : [1];
+            $requestFieldCount = $request->input('row')?$request->field_count:1;
+                for ($j = 0;$j<$requestFieldCount;$j++){
+                    foreach ($requestRow as $i => $id){
+                        $row = $dataTypeRelation->rows->where('field',$request->input('field'))->first();
+                        $order = intval($request->input('order'));
+                        $dataTableRelationshipRows = new DataTableRows();
+                        $dataTableRelationshipRows->data_table_id = $dataTable->id;
+                        $dataTableRelationshipRows->field = $dataTypeRelation->slug.'_relationship_'.$request->input('field');
+                        $dataTableRelationshipRows->type ='relationship';
+                        $dataTableRelationshipRows->display_name = $row->display_name;
+                        if ($request->input('row')){
+                            $rowData = $dataTypeRelationContent->where('id',$id)->first();
+                            $dataTableRelationshipRows->display_name = $rowData->translate(App()->getLocale())->{$request->input('field')};
+                        }
+                        $dataTableRelationshipRows->order =  $order++;
+                        $rowInfo = (object)['column'=>$request->input('field')];
+                        $details = [
+                            'type' => $request->input('type'),
+                            'slug'=> $request->input('slug'),
+                            'row_info' => $rowInfo
+                        ];
+                        if ($request->input('dataTypeRow')){
+                            $details['column'] = $request->input('dataTypeRow')[$i];
+                        }
+                        if ($request->input('row')){
+                            $rowInfo->id = $id;
+                            $dataTableRelationshipRows->field.='_'.$id.'_'.$j;
+                        }
+                        $dataTableRelationshipRows->details = $details;
+
+                        $result[] = $dataTableRelationshipRows->save()?1:0;
                     }
-                    if ($request->input('row')){
-                        $rowInfo->id = $id;
-                        $dataTableRelationshipRows->field.='_'.$id;
-                    }
-                    $dataTableRelationshipRows->details = $details;
-                    $result[] = $dataTableRelationshipRows->save()?1:0;
                 }
 
-            if (array_sum($result) ==  count($requestRow)){
+            if ( array_sum($result) ==  count($requestRow)*$requestFieldCount ){
                 DB::commit();
                 return back()->with([
                     'message'    => 'Successfully created new smart table Field',
@@ -655,7 +663,6 @@ class VoyagerBreadController extends Controller
 
     public function saveRelationData(Request $request)
     {
-
         try {
             DB::beginTransaction();
             // GET THE DataType based on the slug
@@ -715,53 +722,58 @@ class VoyagerBreadController extends Controller
 //        try {
 //            DB::beginTransaction();
              //GET THE DataType based on the slug
-
             $dataTable = Voyager::model('DataTable')->find($request->input('table_id'));
 
-        $dataType = $dataTable->dataType()->first();
-        if ($request->redirect_data){
-            $redirectTableColumn = $dataType->rows->where('type','relationship')->where('details.table',key($request->redirect_data))->first()->details->column;
-            $redirectTableValue = $request->redirect_data[key($request->redirect_data)];
-        }
-        //delete
-        $deletedVaules = DB::table($dataType->name)->when(isset($redirectTableColumn) && isset($redirectTableValue), function ($query) use($redirectTableColumn,$redirectTableValue) {
-            return $query->where($redirectTableColumn,$redirectTableValue);
-        });
-        $delete = call_user_func([$deletedVaules, "delete"]);
+            $dataType = $dataTable->dataType()->first();
+            if ($request->redirect_data){
+                $redirectTableColumn = $dataType->rows->where('type','relationship')->where('details.table',key($request->redirect_data))->first()->details->column;
+                $redirectTableValue = $request->redirect_data[key($request->redirect_data)];
+            }
+            //delete
+            $deletedVaules = DB::table($dataType->name)->when(isset($redirectTableColumn) && isset($redirectTableValue), function ($query) use($redirectTableColumn,$redirectTableValue) {
+                    return $query->where($redirectTableColumn,$redirectTableValue);
+            });
+            $delete = call_user_func([$deletedVaules, "delete"]);
 
-        $tableRows = $request->data;
-        $j = 0;
-        foreach ($tableRows as $record){
-            $groupType = false;
-            if (isset($dataTable->details->groupKeys)){
-                foreach ($dataTable->details->groupKeys as $groupp){
-                    $dataTypeGroup = Voyager::model('DataType')->where('name', '=', $groupp->dataType)->first();
-                    $dataTypeGroupContent = strlen($dataTypeGroup->model_name) != 0 ? app($dataTypeGroup->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
-                    if ($dataTypeGroupContent->where('name',$record[0])->first()) {
-                        $groupType = true;
-                        $groupData = $dataTypeGroupContent->where('name', $record[0])->first();
+            $tableRows = $request->data;
+            $j = 0;
+
+
+
+            foreach ($tableRows as $record){
+                    $groupType = false;
+                    if (isset($dataTable->details->groupKeys)){
+                        foreach ($dataTable->details->groupKeys as $groupp){
+                            $dataTypeGroup = Voyager::model('DataType')->where('name', '=', $groupp->dataType)->first();
+                            $dataTypeGroupContent = strlen($dataTypeGroup->model_name) != 0 ? app($dataTypeGroup->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
+                            if ($dataTypeGroupContent->where('name',$record[0])->first()) {
+                                $groupType = true;
+                                $groupData = $dataTypeGroupContent->where('name', $record[0])->first();
+                            }
+                        }
+                    }
+                    if (!$groupType){
+                        $j++;
+                        $data = new $dataType->model_name;
+                        $i = 0;
+                        foreach ($dataTable->browseRows as $column) {
+                            if ($column->type=="relationship" && isset($column->details->column))
+                                $data->{$column->details->column} = $record[$i];
+                            elseif ($column->type!="relationship")
+                                $data->{$column->field} = $record[$i];
+                            $i++;
+                        }
+                        if (isset($dataTable->details->groupKeys))
+                            $data->{$groupp->column} = $groupData->id;
+
+                        if (isset($redirectTableColumn) && isset($redirectTableValue))
+                            $data->{$redirectTableColumn} = $redirectTableValue;
+                        $data->order = $j;
+//                        if ($data->order==14){
+//                            dd($data);
+//                        }
+                        $data->save();
                     }
                 }
-            }
-            if (!$groupType){
-                $j++;
-                $data = new $dataType->model_name;
-                $i = 0;
-                foreach ($dataTable->browseRows as $column) {
-                    if ($column->type=="relationship" && isset($column->details->column))
-                        $data->{$column->details->column} = $record[$i];
-                    elseif ($column->type!="relationship")
-                        $data->{$column->field} = $record[$i];
-                    $i++;
-                }
-                if (isset($dataTable->details->groupKeys))
-                    $data->{$groupp->column} = $groupData->id;
-
-                if (isset($redirectTableColumn) && isset($redirectTableValue))
-                    $data->{$redirectTableColumn} = $redirectTableValue;
-                $data->order = $j;
-                $data->save();
-            }
-        }
     }
 }
