@@ -86,9 +86,8 @@ class MakeModelCommand extends ModelMakeCommand
             $trait = 'use Translatable;';
             $traitColumns = 'protected $translatable = [';
             foreach ($this->option('translation') as $column){
-                if (in_array($column->getType()->getName(),['varchar','text','tinytext','mediumtext','longtext'])){
+                if (in_array($column->getType()->getName(),config('voyager.multilingual.field_types')))
                     $traitColumns .= '"'.$column->getName().'",';
-                }
             }
             $traitColumns .= '];';
         }
