@@ -159,3 +159,31 @@ if (!function_exists('classes_exists')) {
         return true;
     }
 }
+
+if(!function_exists('update_model_translatable')) {
+    function update_model_translatable($table)
+    {
+        try {
+            $file = base_path() . '\\' . config('voyager.models.namespace') . ucwords(preg_replace('/s$/', '', $table['oldName'])) . '.php';
+            // Find and replace in model_file
+            if (file_exists($file)) {
+
+                // Get translatable columns
+                $translatable_columns = array_filter(array_map(function ($column) {
+                    if (in_array(strtolower($column['type']['name']), config('voyager.multilingual.field_types')))
+                        return $column['name'];
+                }, $table['columns']));
+
+                $new_content = preg_replace('/(.*?protected.*?\$translatable.*?\=.*?\[)(.*?)(\])/', '$1\'' .implode("', '", $translatable_columns). '\'$3', file_get_contents($file));
+
+                file_put_contents($file, $new_content);
+            }
+        } catch (Exception $e) {
+
+            return back()->with([
+                'message' => 'Error changing translatable array in model.' . $e->getMessage(),
+                'alert-type' => 'error',
+            ]);
+        }
+    }
+}

@@ -165,9 +165,11 @@ class VoyagerDatabaseController extends Controller
             ];
             Artisan::call('migrate:generate', $params);
 
+            DataType::updateDataTypeFields($table);
+
             rename_model(getAllModels(),['oldName' => $table['oldName'],'name' => $table['name']]);
 
-            DataType::updateDataTypeFields($table);
+            update_model_translatable($table);
 
         } catch (Exception $e) {
             return back()->with($this->alertException($e))->withInput();
