@@ -6,7 +6,7 @@ use TCG\Voyager\Events\RoutingAdminAfter;
 use TCG\Voyager\Events\RoutingAfter;
 use TCG\Voyager\Models\DataType;
 
-
+//tesssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssst
 /*
 |--------------------------------------------------------------------------
 | Voyager Routes
@@ -16,6 +16,7 @@ use TCG\Voyager\Models\DataType;
 | with Voyager.
 |
 */
+
 
 Route::group(['as' => 'voyager.'], function () {
     event(new Routing());
