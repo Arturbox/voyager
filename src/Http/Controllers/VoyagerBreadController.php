@@ -531,38 +531,39 @@ class VoyagerBreadController extends Controller
 
             $requestRow = $request->input('row') ? $request->input('row') : [1];
             $requestFieldCount = $request->input('row')?$request->field_count:1;
-                for ($j = 0;$j<$requestFieldCount;$j++){
-                    foreach ($requestRow as $i => $id){
-                        $row = $dataTypeRelation->rows->where('field',$request->input('field'))->first();
-                        $order = intval($request->input('order'));
-                        $dataTableRelationshipRows = new DataTableRows();
-                        $dataTableRelationshipRows->data_table_id = $dataTable->id;
-                        $dataTableRelationshipRows->field = $dataTypeRelation->slug.'_relationship_'.$request->input('field');
-                        $dataTableRelationshipRows->type ='relationship';
-                        $dataTableRelationshipRows->display_name = $row->display_name;
-                        if ($request->input('row')){
-                            $rowData = $dataTypeRelationContent->where('id',$id)->first();
-                            $dataTableRelationshipRows->display_name = $rowData->translate(App()->getLocale())->{$request->input('field')};
-                        }
-                        $dataTableRelationshipRows->order =  $order++;
-                        $rowInfo = (object)['column'=>$request->input('field')];
-                        $details = [
-                            'type' => $request->input('type'),
-                            'slug'=> $request->input('slug'),
-                            'row_info' => $rowInfo
-                        ];
-                        if ($request->input('dataTypeRow')){
-                            $details['column'] = $request->input('dataTypeRow')[$i];
-                        }
-                        if ($request->input('row')){
-                            $rowInfo->id = $id;
-                            $dataTableRelationshipRows->field.='_'.$id.'_'.$j;
-                        }
-                        $dataTableRelationshipRows->details = $details;
-
-                        $result[] = $dataTableRelationshipRows->save()?1:0;
+            $i = 0;
+            for ($j = 0;$j<$requestFieldCount;$j++){
+                foreach ($requestRow as $id){
+                    $row = $dataTypeRelation->rows->where('field',$request->input('field'))->first();
+                    $order = intval($request->input('order'));
+                    $dataTableRelationshipRows = new DataTableRows();
+                    $dataTableRelationshipRows->data_table_id = $dataTable->id;
+                    $dataTableRelationshipRows->field = $dataTypeRelation->slug.'_relationship_'.$request->input('field');
+                    $dataTableRelationshipRows->type ='relationship';
+                    $dataTableRelationshipRows->display_name = $row->display_name;
+                    if ($request->input('row')){
+                        $rowData = $dataTypeRelationContent->where('id',$id)->first();
+                        $dataTableRelationshipRows->display_name = $rowData->translate(App()->getLocale())->{$request->input('field')};
                     }
+                    $dataTableRelationshipRows->order =  $order++;
+                    $rowInfo = (object)['column'=>$request->input('field')];
+                    $details = [
+                        'type' => $request->input('type'),
+                        'slug'=> $request->input('slug'),
+                        'row_info' => $rowInfo
+                    ];
+                    if ($request->input('dataTypeRow')){
+                        $details['column'] = $request->input('dataTypeRow')[$i];
+                    }
+                    if ($request->input('row')){
+                        $rowInfo->id = $id;
+                        $dataTableRelationshipRows->field.='_'.$id.'_'.$j;
+                    }
+                    $dataTableRelationshipRows->details = $details;
+                    $result[] = $dataTableRelationshipRows->save()?1:0;
+                    $i++;
                 }
+            }
 
             if ( array_sum($result) ==  count($requestRow)*$requestFieldCount ){
                 DB::commit();
