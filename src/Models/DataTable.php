@@ -18,7 +18,8 @@ class DataTable extends Model
 
     protected $fillable = [
         'name',
-        'data_type_id '
+        'data_type_id ',
+        'nesthead'
     ];
 
     protected $guarded = [];
