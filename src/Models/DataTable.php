@@ -173,7 +173,14 @@ class DataTable extends Model
     }
 
     public function reverseBySmart($dataType,$dataTableContent){
-        $this->rowsByContent = $this->browseRows;
+        $iii = 0;
+        $this->rowsByContent = $this->browseRows->where('details.nesthead','>',-1)->groupBy('details.nesthead')->sortKeys()->map(function ($columns) use(&$iii){
+            return $columns->map(function ($column) use(&$iii){
+                $iii++;
+                $column->order = $iii;
+                return $column;
+            });
+        })->collapse();
 
         $this->dataContent = $dataTableContent->map(function ($data){
             return $this->mergeSmartSelectedValues($data,$this->rowsByContent);
@@ -190,28 +197,64 @@ class DataTable extends Model
 
         //add empty headers
         $this->nestHeaders = collect();
-        $nestParent[] = $empty = (object)['title'=>'', 'colspan'=> $this->rowsByContent->where('type' ,'!=','relationship')->count()];
-        $nestChildren[] = clone $empty;
-        //add relationship headers
-        $this->rowsByContent->where('type' ,'relationship')->groupBy('details.slug')->map(function ($item,$slug) use (&$nestParent,&$nestChildren){
-            $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $slug)->first();
-            $nestParent[] = (object)[ 'title'=>$dataTypeRelation->translate(App()->getLocale())->display_name_singular, 'colspan'=> $item->count() ];
-            if ($item->where('details.row_info.id')->count()){
-                $item->groupBy('details.row_info.id')->map(function ($itemm,$id) use($slug,&$nestChildren,$dataTypeRelation){
-                    $dataTypeRelationContent = strlen($dataTypeRelation->model_name) != 0 ? app($dataTypeRelation->model_name)->where('id',$id)->first() : call_user_func([DB::table($dataTypeRelation->name), "get"])->where('id',$id)->first();
-                    $nestChildren[] = [ 'title'=>$dataTypeRelationContent->translate(App()->getLocale())->{$itemm->first()->details->row_info->column}, 'colspan'=> $itemm->count() ];
-                });
+        $nestParent = [];
+        $nestChildrenTable = [];
+        $nestChildrenTableField = [];
+        $this->rowsByContent->where('details.nesthead','>',-1)->groupBy('details.nesthead')->sortKeys()->map(function ($columns,$id) use(&$nestParent,&$nestChildrenTable,&$nestChildrenTableField){
+            if ($id){
+                $nestHead = Voyager::model('DataType')->where('id',$this->nesthead)->first();
+                $nestHeadDataTypeContent = strlen($nestHead->model_name) != 0 ? app($nestHead->model_name)->where('id',$id)->first() : call_user_func([DB::table($nestHead->name), "get"])->where('id',$id)->first();
+                $nestParent[$id] = (object)['title'=>$nestHeadDataTypeContent->translate(App()->getLocale())->name, 'colspan'=> $columns->count()];
             }
             else{
-                $nestChildren[0]->colspan = $nestChildren[0]->colspan+1;
-             //   dd($nestChildren[0]->colspan);
+                $nestParent[$id] = (object)['title'=>'', 'colspan'=> $columns->count()];
             }
+            //table names
+            $columns->map(function ($column) use (&$nestChildrenTable,&$nestChildrenTableField){
+                if (isset($column->details->slug)){
+                    $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $column->details->slug)->first();
+                    if (isset($nestChildrenTable[$column->details->slug])){
+                        $nestChildrenTable[$column->details->slug]->colspan = $nestChildrenTable[$column->details->slug]->colspan+1;
+                    }
+                    else{
+                        $nestChildrenTable[$column->details->slug] = (object)[ 'title'=>$dataTypeRelation->translate(App()->getLocale())->display_name_singular, 'colspan'=> 1 ];
+                    }
+                }
+                else{
+                    $nestChildrenTable[] = (object)[ 'title'=>'', 'colspan'=> 1 ];
+                }
+                $nestChildrenTableField[] = (object)[ 'title'=>$column->translate(App()->getLocale())->display_name_singular, 'colspan'=> 1 ];
+            });
+
         });
 
-        //dd($nestChildren);
         $this->nestHeaders->push($nestParent);
-        if (isset($nestChildren))
-            $this->nestHeaders->push($nestChildren);
+        $this->nestHeaders->push(array_values($nestChildrenTable));
+        $this->nestHeaders->push($nestChildrenTableField);
+
+
+//        $nestParent[] = $empty = (object)['title'=>'', 'colspan'=> $this->rowsByContent->where('type' ,'!=','relationship')->count()];
+//        $nestChildren[] = clone $empty;
+//        //add relationship headers
+//        $this->rowsByContent->where('type' ,'relationship')->groupBy('details.slug')->map(function ($item,$slug) use (&$nestParent,&$nestChildren){
+//            $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $slug)->first();
+//            $nestParent[] = (object)[ 'title'=>$dataTypeRelation->translate(App()->getLocale())->display_name_singular, 'colspan'=> $item->count() ];
+//            if ($item->where('details.row_info.id')->count()){
+//                $item->groupBy('details.row_info.id')->map(function ($itemm,$id) use($slug,&$nestChildren,$dataTypeRelation){
+//                    $dataTypeRelationContent = strlen($dataTypeRelation->model_name) != 0 ? app($dataTypeRelation->model_name)->where('id',$id)->first() : call_user_func([DB::table($dataTypeRelation->name), "get"])->where('id',$id)->first();
+//                    $nestChildren[] = [ 'title'=>$dataTypeRelationContent->translate(App()->getLocale())->{$itemm->first()->details->row_info->column}, 'colspan'=> $itemm->count() ];
+//                });
+//            }
+//            else{
+//                $nestChildren[0]->colspan = $nestChildren[0]->colspan+1;
+//             //   dd($nestChildren[0]->colspan);
+//            }
+//        });
+//
+//        //dd($nestChildren);
+//        $this->nestHeaders->push($nestParent);
+//        if (isset($nestChildren))
+//            $this->nestHeaders->push($nestChildren);
 
         $this->hiddenRows = $this->mergedListRows->map(function ($column,$key){
             return isset($column->details->hidden)? '"#spreadsheet-'.$this->id.' thead tr:not(.jexcel_nested) td[data-x='.$column->order.']"':false;
