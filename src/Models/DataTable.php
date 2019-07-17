@@ -230,7 +230,7 @@ class DataTable extends Model
 
         $this->nestHeaders->push($nestParent);
         $this->nestHeaders->push(array_values($nestChildrenTable));
-        $this->nestHeaders->push($nestChildrenTableField);
+        //$this->nestHeaders->push($nestChildrenTableField);
 
 
 //        $nestParent[] = $empty = (object)['title'=>'', 'colspan'=> $this->rowsByContent->where('type' ,'!=','relationship')->count()];
