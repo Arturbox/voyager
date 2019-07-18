@@ -546,16 +546,20 @@ class VoyagerBreadController extends Controller
                         $dataTableRelationshipRows->display_name = $rowData->translate(App()->getLocale())->{$request->input('field')};
                     }
                     $dataTableRelationshipRows->order =  $order++;
-                    $rowInfo = (object)['column'=>$request->input('field')];
+                    if ($request->action == 'value')
+                        $rowInfo = (object)['column'=>$request->input('field'),'relationshipTable' => $request->input('dataTypeRelationship')];
+                    else
+                        $rowInfo = (object)['column'=>$request->input('field')];
+
                     $details = [
                         'type' => $request->input('type'),
                         'slug'=> $request->input('slug'),
                         'row_info' => $rowInfo
                     ];
-                    if ($request->input('dataTypeRow')){
+                    if ($request->input('dataTypeRow') && $request->action != 'value'){
                         $details['column'] = $request->input('dataTypeRow')[$i];
                     }
-                    if ($request->input('row')){
+                    if ($request->input('row') && $request->action != 'value'){
                         $rowInfo->id = $id;
                         $dataTableRelationshipRows->field.='_'.$id.'_'.$j;
                     }
