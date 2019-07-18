@@ -324,7 +324,7 @@ class DataTable extends Model
     public function mergeSmartSelectedValues($data,$columns)
     {
         return $columns->map(function ($column) use ($data){
-            if ($data->{$column->field})
+            if (array_key_exists($column->field, $data->attributes))
                 return [$column->field=>$data->{$column->field}];
             elseif (isset($column->details->column) && $column->type == 'relationship')
                 return [$column->field=>$data->{$column->details->column}];
