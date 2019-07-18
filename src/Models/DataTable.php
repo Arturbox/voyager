@@ -223,7 +223,7 @@ class DataTable extends Model
                 else{
                     $nestChildrenTable[] = (object)[ 'title'=>'', 'colspan'=> 1 ];
                 }
-                $nestChildrenTableField[] = (object)[ 'title'=>$column->translate(App()->getLocale())->display_name_singular, 'colspan'=> 1 ];
+                $nestChildrenTableField[] = (object)[ 'title'=>$column->translate(App()->getLocale())->display_name, 'colspan'=> 1 ];
             });
 
         });

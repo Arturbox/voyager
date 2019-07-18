@@ -742,39 +742,45 @@ class VoyagerBreadController extends Controller
 
 
             foreach ($tableRows as $record){
-                    $groupType = false;
-                    if (isset($dataTable->details->groupKeys)){
-                        foreach ($dataTable->details->groupKeys as $groupp){
-                            $dataTypeGroup = Voyager::model('DataType')->where('name', '=', $groupp->dataType)->first();
-                            $dataTypeGroupContent = strlen($dataTypeGroup->model_name) != 0 ? app($dataTypeGroup->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
-                            if ($dataTypeGroupContent->where('name',$record[0])->first()) {
-                                $groupType = true;
-                                $groupData = $dataTypeGroupContent->where('name', $record[0])->first();
-                            }
-                        }
-                    }
-                    if (!$groupType){
-                        $j++;
-                        $data = new $dataType->model_name;
-                        $i = 0;
-                        foreach ($dataTable->browseRows as $column) {
-                            if ($column->type=="relationship" && isset($column->details->column))
-                                $data->{$column->details->column} = $record[$i];
-                            elseif ($column->type!="relationship")
-                                $data->{$column->field} = $record[$i];
-                            $i++;
-                        }
-                        if (isset($dataTable->details->groupKeys))
-                            $data->{$groupp->column} = $groupData->id;
-
-                        if (isset($redirectTableColumn) && isset($redirectTableValue))
-                            $data->{$redirectTableColumn} = $redirectTableValue;
-                        $data->order = $j;
-//                        if ($data->order==14){
-//                            dd($data);
-//                        }
-                        $data->save();
+            $groupType = false;
+            if (isset($dataTable->details->groupKeys)){
+                foreach ($dataTable->details->groupKeys as $groupp){
+                    $dataTypeGroup = Voyager::model('DataType')->where('name', '=', $groupp->dataType)->first();
+                    $dataTypeGroupContent = strlen($dataTypeGroup->model_name) != 0 ? app($dataTypeGroup->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
+                    if ($dataTypeGroupContent->where('name',$record[0])->first()) {
+                        $groupType = true;
+                        $groupData = $dataTypeGroupContent->where('name', $record[0])->first();
                     }
                 }
+            }
+            if (!$groupType){
+                $j++;
+                $data = new $dataType->model_name;
+                $i = 0;
+                $browseRows = $dataTable->browseRows->where('details.nesthead','>',-1)->groupBy('details.nesthead')->sortKeys()->map(function ($columns) use(&$iii){
+                    return $columns->map(function ($column) use(&$iii){
+                        $iii++;
+                        $column->order = $iii;
+                        return $column;
+                    });
+                })->collapse();
+
+                foreach ($browseRows as $column) {
+                    if ($column->type=="relationship" && isset($column->details->column))
+                        $data[$column->details->column] = $record[$i];
+                    elseif ($column->type!="relationship")
+                        $data[$column->field] = $record[$i];
+                    $i++;
+                }
+
+                if (isset($dataTable->details->groupKeys))
+                    $data->{$groupp->column} = $groupData->id;
+
+                if (isset($redirectTableColumn) && isset($redirectTableValue))
+                    $data->{$redirectTableColumn} = $redirectTableValue;
+                $data->order = $j;
+                $data->save();
+            }
+        }
     }
 }
