@@ -335,6 +335,12 @@ class DataTable extends Model
                     : call_user_func([DB::table($dataTypeRelation->name), "get"]);
                 return [$column->field=>$data->{$column->details->row_info->column}];
             }
+            elseif ($column->type == 'relationship' && isset($column->details->row_info->relationshipTable)){
+                $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $column->details->row_info->relationshipTable)->first();
+                $relationId = $data->{$column->details->row_info->relationField};
+                $dataTypeRelationContent = strlen($dataTypeRelation->model_name) != 0 ? app($dataTypeRelation->model_name)->where('id',$relationId)->first() : call_user_func([DB::table($dataTypeRelation->name), "get"])->where('id',$relationId)->first();
+                return [$column->field=>$dataTypeRelationContent->$column->details->row_info->column];
+            }
         })->collapse();
     }
 
