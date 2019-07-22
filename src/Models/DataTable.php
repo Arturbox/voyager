@@ -335,11 +335,20 @@ class DataTable extends Model
                     : call_user_func([DB::table($dataTypeRelation->name), "get"]);
                 return [$column->field=>$data->{$column->details->row_info->column}];
             }
-            elseif ($column->type == 'relationship' && isset($column->details->row_info->relationshipTable)){
-                $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $column->details->row_info->relationshipTable)->first();
-                $relationId = $data->{$column->details->row_info->relationField};
-                $dataTypeRelationContent = strlen($dataTypeRelation->model_name) != 0 ? app($dataTypeRelation->model_name)->where('id',$relationId)->first() : call_user_func([DB::table($dataTypeRelation->name), "get"])->where('id',$relationId)->first();
-                return [$column->field=>$dataTypeRelationContent->$column->details->row_info->column];
+            elseif ($column->type == 'relationship' && isset($column->details->row_info->relationshipTable) && isset($column->details->row_info->relationshipField)){
+                $slug = $column->details->slug;
+                $dataType =  Voyager::model('DataType')->where('slug', '=', $slug)->first();
+                $dataTypeContent = strlen($dataType->model_name) != 0 ? app($dataType->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
+
+                $slugBind = $column->details->row_info->relationshipTable;
+
+                $select = (object)['tables' => [$slugBind => $data->{$column->details->row_info->relationshipField}]];
+                if ($result = DataFilter::relatedDataFiltering($select, $dataTypeContent, $slug)->first()){
+                    return [$column->field=>$result->translate(App()->getLocale())->{$column->details->row_info->column}];
+                }
+                else{
+                    return [$column->field=>''];
+                }
             }
         })->collapse();
     }

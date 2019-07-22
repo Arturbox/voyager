@@ -118,14 +118,14 @@ class DataFilter extends Model
             }
             elseif ($dataFilterSelected->details->type == "hasOne"){
                 foreach ($dataTypeContent as $key => &$data){
-                    if (!$data->hasOne($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
+                    if (!$data->hasOne($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->getKeyName(),$value)->get()->count()){
                         unset($dataTypeContent[$key]);
                     }
                 }
             }
             elseif ($dataFilterSelected->details->type == "hasMany"){
                 foreach ($dataTypeContent as $key => &$data){
-                    if (!$data->hasMany($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->details->column,$value)->get()->count()){
+                    if (!$data->hasMany($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->getKeyName(),$value)->get()->count()){
                         unset($dataTypeContent[$key]);
                     }
                 }
