@@ -136,6 +136,7 @@ Route::group(['as' => 'voyager.'], function () {
 //
             Route::post('save_data', ['uses' => $namespacePrefix.'VoyagerBreadController@saveData',  'as' => 'save_data']);
             Route::post('column_data', ['uses' => $namespacePrefix.'VoyagerBreadController@columnData',  'as' => 'column_data']);
+            Route::post('saveSmartColWidth', ['uses' => $namespacePrefix.'VoyagerBreadController@saveSmartColWidth',  'as' => 'saveSmartColWidth']);
             Route::post('saveSmartData', ['uses' => $namespacePrefix.'VoyagerBreadController@saveSmartData',  'as' => 'saveSmartData']);
         });
 

@@ -722,6 +722,36 @@ class VoyagerBreadController extends Controller
         }
     }
 
+    public function saveSmartColWidth ( Request $request ) {
+        try {
+            DB::beginTransaction();
+
+            $data = json_decode($request->post('data'));
+
+            $dataTable = Voyager::model('DataTable')->find($request->post('table_id'))->first();
+
+            $iii = 0;
+            $dataTable->browseRows->where('details.nesthead','>',-1)->groupBy('details.nesthead')->sortKeys()->map(function ($columns)use(&$iii , $data){
+                $columns->map(function ($column) use(&$iii, $data){
+                    $details = $column->details;
+                    $details->width = $data[$iii]->width;
+                    Voyager::model('DataTableRows')->where('id', $column->id)->update(['details' => json_encode($details)]);
+                    $iii++;
+                });
+            });
+            DB::commit();
+
+            return Response::json( ['message'   => 'Successfully updated smart column width.',
+                'alert-type' => 'success'] );
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return Response::json( ['message'    => 'Error updating smart column width.',
+                'alert-type' => 'error'] );
+        }
+    }
+
 
     public function saveSmartData(Request $request){
 //        try {
