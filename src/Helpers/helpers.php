@@ -187,3 +187,20 @@ if(!function_exists('update_model_translatable')) {
         }
     }
 }
+
+if(!function_exists('migrate_generate_column_fix')){
+    function migrate_generate_column_fix($table_name){
+
+        getAllMigrations()->map( function($migration) use ($table_name){
+
+            if(preg_match('/create_'.$table_name.'_table.php/',$migration->getFilename())){
+
+                $content = file_get_contents($migration_file = $migration->getRealPath());
+                foreach (array_keys($params = config('voyager.migrate.params')) as $key){
+                    $content =  preg_replace('/(->)('.$key.')(\()/','$1'.$params[$key].'$3', $content);
+                }
+                return file_put_contents($migration_file, $content);
+            }
+        });
+    }
+}

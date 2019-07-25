@@ -84,6 +84,7 @@ class VoyagerDatabaseController extends Controller
                         '--no-interaction'=>true
                     ];
                     Artisan::call('migrate:generate', $params);
+                    migrate_generate_column_fix($table->name);
                 }
                 $modelNamespace = config('voyager.models.namespace', app()->getNamespace());
                 $params = [
@@ -106,6 +107,7 @@ class VoyagerDatabaseController extends Controller
                     '--no-interaction'=>true
                 ];
                 Artisan::call('migrate:generate', $params);
+                migrate_generate_column_fix($table->name);
             }
             event(new TableAdded($table));
             return redirect()
@@ -164,7 +166,7 @@ class VoyagerDatabaseController extends Controller
                 '--no-interaction'=>true
             ];
             Artisan::call('migrate:generate', $params);
-
+            migrate_generate_column_fix($table['name']);
             DataType::updateDataTypeFields($table);
 
             rename_model(getAllModels(),['oldName' => $table['oldName'],'name' => $table['name']]);

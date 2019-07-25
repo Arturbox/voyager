@@ -21,6 +21,7 @@ use TCG\Voyager\Models\DataRow;
 use TCG\Voyager\Models\DataType;
 use TCG\Voyager\Models\Permission;
 use TCG\Voyager\Translator\Collection;
+use Response;
 
 class VoyagerBreadController extends Controller
 {
