@@ -138,6 +138,8 @@ class VoyagerBaseController extends Controller
         /*********** SMART TABLE*********/
         if ($dataTables = DataTable::where('data_type_id', '=',$dataType->id)->count()
         ){
+            if ($dataTypeContent->count())
+                $dataTypeContent = $dataTypeContent->sortBy('order');
             $dataTables = DataTable::where('data_type_id', '=',$dataType->id)->get();
             $dataTables->map(function ($dataTable) use($dataType,$dataTypeContent){
                 return $dataTable->reverseBySmart($dataType,$dataTypeContent);

@@ -142,6 +142,8 @@ class VoyagerBreadController extends Controller
             $dataTables = DataTable::where('data_type_id', '=',$dataType->id)->get();
             $dataTables->map(function ($dataTable) use($dataType){
                 $dataTableContent = strlen($dataTable->dataType->model_name) != 0 ? app($dataTable->dataType->model_name)->orderBy('order')->get() : call_user_func([DB::table($dataType->name), "get"]);
+                if ($dataTableContent->count())
+                    $dataTableContent = $dataTableContent->sortBy('order');
                 return $dataTable->reverseBySmart($dataType,$dataTableContent);
             });
         }
@@ -779,12 +781,12 @@ class VoyagerBreadController extends Controller
             foreach ($tableRows as $record){
             $groupType = false;
             if (isset($dataTable->details->groupKeys)){
-                foreach ($dataTable->details->groupKeys as $groupp){
+                foreach ($dataTable->details->groupKeys as $key => $groupp){
                     $dataTypeGroup = Voyager::model('DataType')->where('name', '=', $groupp->dataType)->first();
                     $dataTypeGroupContent = strlen($dataTypeGroup->model_name) != 0 ? app($dataTypeGroup->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
                     if ($dataTypeGroupContent->where('name',$record[0])->first()) {
+                        $groupData[$groupp->column] = $dataTypeGroupContent->where('name', $record[0])->first();
                         $groupType = true;
-                        $groupData = $dataTypeGroupContent->where('name', $record[0])->first();
                     }
                 }
             }
@@ -808,8 +810,11 @@ class VoyagerBreadController extends Controller
                     $i++;
                 }
 
-                if (isset($dataTable->details->groupKeys))
-                    $data->{$groupp->column} = $groupData->id;
+                if (isset($dataTable->details->groupKeys)){
+                    foreach ($groupData as $key => $val) {
+                        $data->{$key} = $val->id;
+                    }
+                }
 
                 if (isset($redirectTableColumn) && isset($redirectTableValue))
                     $data->{$redirectTableColumn} = $redirectTableValue;
