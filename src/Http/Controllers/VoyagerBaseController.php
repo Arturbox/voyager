@@ -764,4 +764,77 @@ class VoyagerBaseController extends Controller
         }
     }
 
+    //***************************************
+    //
+    //                   /\
+    //                  /  \
+    //                 / /\ \
+    //                / ____ \
+    //               /_/    \_\
+    //
+    // Add a new data to SMART table
+    //
+    //****************************************
+    public function addGroup( Request $request )
+    {
+        try {
+            DB::beginTransaction();
+
+            $slug = $this->getSlug($request);
+
+            $dataType = Voyager::model('DataType')->where('slug', $slug)->first();
+            // Check permission
+            $this->authorize('add', app($dataType->model_name));
+
+            foreach ($request->post('data') as $key =>$value){
+
+                $dataFieldName = Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship')->where('details.table',$key)->first()->details->column;
+
+                $data[$dataFieldName] = $value;
+            }
+
+            $result = $data;
+
+            if(isset(Session::all()[$slug]->tables)){
+
+                $parentFieldName = Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship')->where('details.table',key(Session::all()[$slug]->tables))->first()->details->column;
+
+                $parentFieldId =  Session::all()[$slug]->tables[key(Session::all()[$slug]->tables)];
+
+                $result = array_merge($data, array($parentFieldName => $parentFieldId));
+
+            }
+
+            if ($dataType->model_name::create($result)) {
+
+                $dataType->model_name::query()
+
+                    ->when(isset($parentFieldName), function ($query) {
+
+                        return $query->where($parentFieldName, $parentFieldId);
+
+                    })
+
+                    ->orderByRaw(DB::raw(implode(' , ', array_keys($data))))->get()->map(function ($value, $key) {
+
+                        $value->order = $key + 1;
+
+                        $value->save();
+                });
+
+                DB::commit();
+
+                return back()->with(['message' => 'Successfully created new smart table row.',
+                    'alert-type' => 'success']);
+            }
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return back()->with(['message'   => 'Error while creating new smart table row.',
+                'alert-type' => 'error'] );
+        }
+    }
+
 }

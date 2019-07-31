@@ -252,6 +252,12 @@ class DataTable extends Model
             return '"#spreadsheet-'.$this->id.' thead tr:not(.jexcel_nested) td[data-x='.$key.']"';
         });
 
+        $this->groups = isset($this->details->groupKeys) ? collect($this->details->groupKeys)->map(function ($group){
+            $dataTypeGroup = Voyager::model('DataType')->where('slug', '=', $group->dataType)->first();
+            $dataTypeGroupContent = strlen($dataTypeGroup->model_name) != 0 ? app($dataTypeGroup->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
+            return (object)['dataContent'=>$dataTypeGroupContent,'field'=>$group->show_field, 'dataType'=> $group->dataType];
+        }):false;
+
         return $this;
     }
 

@@ -42,6 +42,7 @@ Route::group(['as' => 'voyager.'], function () {
                                  ? $dataType->controller
                                  : $namespacePrefix.'VoyagerBaseController';
 
+                Route::post($dataType->slug.'/addGroup', $breadController.'@addGroup')->name($dataType->slug.'.addGroup');
                 Route::get($dataType->slug.'/restore', $breadController.'@restore')->name($dataType->slug.'.restore');
                 Route::post($dataType->slug.'/restore', $breadController.'@restore_row')->name($dataType->slug.'.restore');
                 Route::put($dataType->slug.'/redirect/{id}', $breadController.'@redirect')->name($dataType->slug.'.redirect');
