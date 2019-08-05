@@ -172,8 +172,20 @@ class DataTable extends Model
         }
     }
 
+    public function getNameFromNumber($num) {
+        $numeric = $num % 26;
+        $letter = chr(65 + $numeric);
+        $num2 = intval($num / 26);
+        if ($num2 > 0) {
+            return getNameFromNumber($num2 - 1) . $letter;
+        } else {
+            return $letter;
+        }
+    }
+
+
     public function reverseBySmart($dataType,$dataTableContent){
-        $iii = 0;
+        $this->i = $iii = 0;
         $this->rowsByContent = $this->browseRows->where('details.nesthead','>',-1)->groupBy('details.nesthead')->sortKeys()->map(function ($columns) use(&$iii){
             return $columns->map(function ($column) use(&$iii){
                 $iii++;
@@ -183,9 +195,8 @@ class DataTable extends Model
         })->collapse();
 
         $this->dataContent = $dataTableContent->map(function ($data){
-            return $this->mergeSmartSelectedValues($data,$this->rowsByContent);
+            return $this->mergeSmartSelectedValues($data);
         });
-        //dd($dataTable->dataContent);
 
         $this->mergedListRows = $this->rowsByContent->map(function ($column,$i) {
             return $this->mergedSelectListInRows($column,$i);
@@ -230,7 +241,6 @@ class DataTable extends Model
 
         $this->nestHeaders->push($nestParent);
         $this->nestHeaders->push(array_values($nestChildrenTable));
-        //$this->nestHeaders->push($nestChildrenTableField);
 
 
         $this->hiddenRows = $this->mergedListRows->map(function ($column,$key){
@@ -247,6 +257,38 @@ class DataTable extends Model
             $this->dataContent->groupBy($groups)->recursiveGroups($this->details->groupKeys,0,$this->mergedListRows,$dataByGroup);
             $this->dataContent = $dataByGroup;
         }
+
+
+        //formula
+        $this->letterFields = $this->rowsByContent->map(function ($row,$i){
+            return $this->getNameFromNumber($i);
+        });
+        $this->rowsByContent->where("details.formula")->map(function ($row)  {
+            $this->dataContent->map(function ($data) use($row){
+                $this->i = $this->i+1;
+                if ($data->has($row->field)){
+                    $data->put($row->field, preg_replace_callback("/[a-zA-Z]+/",function ($input){
+                                if ($this->letterFields->search($input[0])!==false)
+                                    return $input[0].$this->i;
+                                return $input[0];
+                                },$row->details->formula)
+                            );
+                }
+                return $data;
+            });
+            $this->i = 0;
+        });
+
+        $this->rowsByContent->where("details.formula")->map(function ($row){
+            return $this->dataContent->map(function ($data) use($row){
+                if (isset($column->details->formula))
+                $data->{$column->field} = preg_replace_callback("/[a-zA-Z]+/",function ($input){
+                if ($this->letterFields->search($input[0])!==false)
+                    return $input[0].$this->i;
+                return $input[0];
+            },$column->details->formula);
+            });
+        });
 
         $this->showHiddenColumns = $this->mergedListRows->map(function ($item,$key) {
             return '"#spreadsheet-'.$this->id.' thead tr:not(.jexcel_nested) td[data-x='.$key.']"';
@@ -304,9 +346,9 @@ class DataTable extends Model
         return $array;
     }
 
-    public function mergeSmartSelectedValues($data,$columns)
+    public function mergeSmartSelectedValues($data)
     {
-        return $columns->map(function ($column) use ($data){
+        return $this->rowsByContent->map(function ($column) use ($data){
             if (array_key_exists($column->field, $data->attributes))
                 return [$column->field=>$data->{$column->field}];
             elseif (isset($column->details->column) && $column->type == 'relationship')
