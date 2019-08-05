@@ -698,30 +698,47 @@ class VoyagerBreadController extends Controller
 
     public function getSmartRelationsCompare(Request $request)
     {
-        $dataType = Voyager::model('DataType')->whereName($request->main_table)->first();
-        $dataType2 = Voyager::model('DataType')->whereName($request->selected_table)->first();
-        $relations = $dataType2->rows->where('type','relationship')->map(function ($item1) use ($dataType)  {
-            $fields = $dataType->rows->where('type','relationship')->pluck('details')->pluck('column','table')->toArray();
-            if (array_key_exists($item1->details->table,$fields))
-            {
-                return [$fields[$item1->details->table] => $item1->details->table];
-            }
-        });
-        return json_encode(['relations' => $relations->toArray(),'id' => $request->id]);
+        try{
+            $dataType = Voyager::model('DataType')->where('slug', $request->table)->first();
+            $rows = Voyager::model('DataType')->where('slug', json_decode($request->post('data'))->dataType)->first()->rows->where('type','relationship')->where('details.type','belongsTo');
+            $relations = $rows->map(function ($row) use ($dataType)  {
+                $fields = $dataType->rows->where('type','relationship')->where('details.type','belongsTo')->pluck('details')->pluck('column','table')->toArray();
+                if (isset($fields[(string)$row->details->table]))
+                    return [
+                        'dataType' => $row->details->table,
+                        'column' => $fields[$row->details->table],
+                        'show_filed'=> $row->details->label
+                    ];
+
+            })->values()->filter();
+
+            return Response::json( ['relations'  => $relations,
+                'alert-type' => 'success'] );
+        }catch (\Exception $e){
+
+            return Response::json( ['message'    => 'Error while comaring smart table relations.',
+                'alert-type' => 'error'] );
+        }
     }
 
 
     public function saveSmartGroupTable(Request $request){
         try{
             $dataTable = DataTable::find($request->data_table_id);
-            $groupKeys = collect($request->table)->map(function($info){
+            $groupKeys = collect($request->post('table'))->map(function($info){
                 return json_decode($info);
-            })->toArray();
-            $dataTable->details = ['groupKeys' => $groupKeys ];
+            })->filter()->toArray();
+            $dataTable->details = (object)['groupKeys' => $groupKeys ];
             $dataTable->save();
-            return redirect()->back();
+            return back()->with([
+                'message'    => 'Successfully updated smart table options.',
+                'alert-type' => 'success',
+            ]);
         }catch (Exception $e){
-            echo $e;
+            return back()->with([
+                'message'    => 'Errpr updating smart table options.',
+                'alert-type' => 'error',
+            ]);
         }
     }
 
