@@ -177,7 +177,7 @@ class DataTable extends Model
         $letter = chr(65 + $numeric);
         $num2 = intval($num / 26);
         if ($num2 > 0) {
-            return getNameFromNumber($num2 - 1) . $letter;
+            return $this->getNameFromNumber($num2 - 1) . $letter;
         } else {
             return $letter;
         }
@@ -239,7 +239,7 @@ class DataTable extends Model
 
         });
 
-        $this->nestHeaders->push($nestParent);
+        $this->nestHeaders->push(array_values($nestParent));
         $this->nestHeaders->push(array_values($nestChildrenTable));
 
 
