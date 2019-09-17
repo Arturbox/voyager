@@ -90,6 +90,24 @@ class DataFilter extends Model
         return json_decode(!empty($value) ? $value : '{}');
     }
 
+
+    public static function smartDropdownColumnDataFilter($column)
+    {
+        $slug = $column->details->slug;
+        $dataType =  Voyager::model('DataType')->where('slug', '=', $slug)->first();
+        $dataTypeContent = strlen($dataType->model_name) != 0 ? app($dataType->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
+
+        $columnBind = $this->rowsByContent->where('field',$column->details->relationship);
+        $BindKey = $columnBind->keys()->first();
+
+        $slugBind = $columnBind->first()->details->slug;
+        $dataTypeBind = Voyager::model('DataType')->where('slug', '=', $slugBind)->first();
+        $dataTypeContentBind = strlen($dataTypeBind->model_name) != 0 ? app($dataTypeBind->model_name)->get() : call_user_func([DB::table($dataTypeBind->name), "get"]);
+
+
+        return true;
+    }
+
     public static function relatedDataFiltering($select,$dataTypeContent,$slug = null)
     {
         foreach ($select->tables as $k => $value){

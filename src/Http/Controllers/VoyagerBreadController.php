@@ -107,6 +107,12 @@ class VoyagerBreadController extends Controller
                 event(new BreadAdded($dataType, $data));
             }
 
+//            activity($dataType->name)
+//                ->performedOn($dataType)
+//                ->causedBy(\Auth::user())
+//                ->withProperties($request->all())
+//                ->log($request->getMethod());
+
             return redirect()->route('voyager.bread.index')->with($data);
         } catch (Exception $e) {
             return redirect()->route('voyager.bread.index')->with($this->alertException($e, 'Saving Failed'));
@@ -141,7 +147,7 @@ class VoyagerBreadController extends Controller
         if (isset($dataType->id)){
             $dataTables = DataTable::where('data_type_id', '=',$dataType->id)->get();
             $dataTables->map(function ($dataTable) use($dataType){
-                $dataTableContent = strlen($dataTable->dataType->model_name) != 0 ? app($dataTable->dataType->model_name)->orderBy('order')->get() : call_user_func([DB::table($dataType->name), "get"]);
+                $dataTableContent = strlen($dataType->model_name) != 0 ? app($dataType->model_name)->orderBy('order')->get() : call_user_func([DB::table($dataType->name), "get"]);
                 if ($dataTableContent->count())
                     $dataTableContent = $dataTableContent->sortBy('order');
                 return $dataTable->reverseBySmart($dataType,$dataTableContent);
@@ -207,6 +213,11 @@ class VoyagerBreadController extends Controller
                 unset($request->{'field_'.$attribute.'_'.$row->field});
                 unset($request->{'field_'.$attribute.'_'.$row->field.'_i18n'});
             }
+//            activity($dataType->name)
+//                ->performedOn($dataType)
+//                ->causedBy(\Auth::user())
+//                ->withProperties($request->all())
+//                ->log($request->getMethod());
 
             return redirect()->route('voyager.bread.index')->with($data);
         } catch (Exception $e) {
@@ -508,6 +519,13 @@ class VoyagerBreadController extends Controller
             }
             DB::commit();
 
+            //add saving data in activity log data
+//            activity($dataTable->name)
+//                ->performedOn($dataTable)
+//                ->causedBy(\Auth::user())
+//                ->withProperties($request->all())
+//                ->log($request->getMethod());
+
             return back()->with([
                 'message'    => 'Successfully created new smart table',
                 'alert-type' => 'success',
@@ -525,21 +543,27 @@ class VoyagerBreadController extends Controller
     {
         try {
             DB::beginTransaction();
+            $action = $request->post('action');
 
-            $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $request->input('slug'))->first();
+            if( $action == 'smartTableFields'){
+                $dataTypeRelation = Voyager::model('DataTable')->where('id', '=', $request->post('smart_id'))->first();
+                $dataTypeRelation->slug = $dataTypeRelation->dataType->slug;
+            }
+            else{
+                $dataTypeRelation = Voyager::model('DataType')->where('slug', '=', $request->input('slug'))->first();
+                $dataTypeRelationContent = strlen($dataTypeRelation->model_name) != 0 ? app($dataTypeRelation->model_name)->get() : call_user_func([DB::table($dataTypeRelation->name), "get"]);
+            }
 
             $dataTable =  Voyager::model('DataTable')->find($id);
-
-            $dataTypeRelationContent = strlen($dataTypeRelation->model_name) != 0 ? app($dataTypeRelation->model_name)->get() : call_user_func([DB::table($dataTypeRelation->name), "get"]);
-
-            $requestRow = $request->input('row') ? $request->input('row') : [1];
-            $requestFieldCount = $request->input('row')?$request->field_count:1;
+            $requestRow = $action == 'tableFields' ? $request->input('row') : [1];
+            $requestFieldCount = $action == 'tableFields'?$request->field_count:1;
             $i = 0;
-            for ($j = 0;$j<$requestFieldCount;$j++){
+            for ($j = 0; $j<$requestFieldCount; $j++){
                 foreach ($requestRow as $id){
-                    $row = $dataTypeRelation->rows->where('field',$request->input('field'))->first();
+                    $row = !empty($dataTypeRelation->rows)? $dataTypeRelation->rows->where('field',$request->input('field'))->first():$dataTypeRelation->columns->where('id', $request->input('column_id'))->first();
                     $order = intval($request->input('order'));
                     $dataTableRelationshipRows = new DataTableRows();
+                    $dataTableRelationshipRows->order = $order++;
                     $dataTableRelationshipRows->data_table_id = $dataTable->id;
                     $dataTableRelationshipRows->field = $dataTypeRelation->slug.'_relationship_'.$request->input('field');
                     $dataTableRelationshipRows->type ='relationship';
@@ -548,21 +572,40 @@ class VoyagerBreadController extends Controller
                         $rowData = $dataTypeRelationContent->where('id',$id)->first();
                         $dataTableRelationshipRows->display_name = $rowData->translate(App()->getLocale())->{$request->input('field')};
                     }
-                    $dataTableRelationshipRows->order =  $order++;
-                    if ($request->action == 'value')
-                        $rowInfo = (object)['column'=>$request->input('field'),'relationshipTable' => $request->input('dataTypeRelationship')];
-                    else
-                        $rowInfo = (object)['column'=>$request->input('field')];
 
+                    if ($action == 'tableValues' || $action == 'smartTableFields'){
+                        $rowInfo = (object)['column'=>$request->input('field'),'relationshipTable' => $request->input('dataTypeRelationship')];
+
+                        if ($action == 'smartTableFields'){
+
+                            $relationshipField =  $dataTypeRelation->columns->where('type','relationship')->where('details.slug', $request->post('dataTypeRelationship'))->first()->field;
+                            $rowInfo->relationshipBindColumn =$dataTypeRelation->columns->where('field', $relationshipField)->first()->details->column;
+                            $rowInfo->relationshipComlumn = $dataTable->columns->where('type','relationship')->where('details.slug', $request->post('dataTypeRelationship'))->first()->details->column;
+                            $rowInfo->column = $row->field;
+                        }
+                        elseif ($action == 'tableValues'){
+
+                            $dataTypeRelationshipBind = Voyager::model('dataType')->where('slug',$request->post('dataTypeRelationship'))->first();
+
+                            $rowInfo->relationshipField = $dataTypeRelationshipBind->rows->where('type','relationship')->where('details.table',$dataTypeRelation->slug)->first()->field;
+                        }
+                    }
+                    elseif($action == 'smartTableFields') $rowInfo = (object) ['column'=> $row->field ];
+                    else                                  $rowInfo = (object)['column'=>$request->input('field')];
                     $details = [
                         'type' => $request->input('type'),
-                        'slug'=> $request->input('slug'),
-                        'row_info' => $rowInfo
+                        'slug'=> $request->input('slug')? $request->input('slug'):$dataTypeRelation->slug,
+                        'row_info' => $rowInfo,
+                        'relationship_type' => $action,
                     ];
-                    if ($request->input('dataTypeRow') && $request->action != 'value'){
+                    if($request->post('smart_id') && $action == 'smartTableFields'){
+                        $details['smart_id'] = $request->post('smart_id');
+                        $details['column'] = $request->input('save_in');
+                    }
+                    if ($request->input('dataTypeRow') && $action != 'tableValues'){
                         $details['column'] = $request->input('dataTypeRow')[$i];
                     }
-                    if ($request->input('row') && $request->action != 'value'){
+                    if ($request->input('row') && $action != 'tableValues'){
                         $rowInfo->id = $id;
                         $dataTableRelationshipRows->field.='_'.$id.'_'.$j;
                     }
@@ -627,7 +670,7 @@ class VoyagerBreadController extends Controller
 
             $dataType = $dataTable->dataType()->first();
 
-            $dataTableRows = Voyager::model('DataTableRows')->where('data_table_id',$id)->get();
+            $dataTableRows = $dataTable->columns()->get();
 
             // Prepare Translations and Transform data
             $translations = is_bread_translatable($dataTable)
@@ -660,7 +703,11 @@ class VoyagerBreadController extends Controller
                 unset($request->{'field_'.$attribute.'_'.$row->field.'_i18n'});
             }
 
-
+//            activity($dataTable->dataType->slug)
+//                ->performedOn($dataTable->dataType)
+//                ->causedBy(\Auth::user())
+//                ->withProperties($request->all())
+//                ->log($request->getMethod());
 
             return redirect()->route('voyager.bread.index')->with($data);
         } catch (Exception $e) {
@@ -698,47 +745,50 @@ class VoyagerBreadController extends Controller
 
     public function getSmartRelationsCompare(Request $request)
     {
-        try{
-            $dataType = Voyager::model('DataType')->where('slug', $request->table)->first();
-            $rows = Voyager::model('DataType')->where('slug', json_decode($request->post('data'))->dataType)->first()->rows->where('type','relationship')->where('details.type','belongsTo');
-            $relations = $rows->map(function ($row) use ($dataType)  {
-                $fields = $dataType->rows->where('type','relationship')->where('details.type','belongsTo')->pluck('details')->pluck('column','table')->toArray();
-                if (isset($fields[(string)$row->details->table]))
-                    return [
-                        'dataType' => $row->details->table,
-                        'column' => $fields[$row->details->table],
-                        'show_filed'=> $row->details->label
-                    ];
+        $data = json_decode($request->data);
+        $dataType = Voyager::model('DataType')->whereName($request->table)->first();
+        $dataType2 = Voyager::model('DataType')->whereName($data->dataType)->first();
 
-            })->values()->filter();
+        $relations = $dataType2->rows->where('type','relationship')->map(function ($item) use ($dataType, $dataType2)  {
+            $fields = $dataType->rows->where('type','relationship')->pluck('details')->pluck('column','table')->toArray();
+            if (array_key_exists($item->details->table,$fields))
+            {
+                return ['dataType' => $item->details->table, 'column'=>$item->details->column, 'show_field'=>$item->details->label];
+            }
+        })->filter()->values()->toArray();
 
-            return Response::json( ['relations'  => $relations,
-                'alert-type' => 'success'] );
-        }catch (\Exception $e){
+        if(!empty($relations))
+            return Response::json( [ 'status'=>true, 'relations'=>$relations] );
+        else
+            return Response::json( ['message'=>'No relations', 'status'=>false] );
 
-            return Response::json( ['message'    => 'Error while comaring smart table relations.',
-                'alert-type' => 'error'] );
-        }
     }
 
 
     public function saveSmartGroupTable(Request $request){
         try{
             $dataTable = DataTable::find($request->data_table_id);
-            $groupKeys = collect($request->post('table'))->map(function($info){
-                return json_decode($info);
-            })->filter()->toArray();
-            $dataTable->details = (object)['groupKeys' => $groupKeys ];
-            $dataTable->save();
-            return back()->with([
-                'message'    => 'Successfully updated smart table options.',
-                'alert-type' => 'success',
-            ]);
+//            $dataTable->columns->where('type','groupBy')->delete();
+            $order = $dataTable->lastColumn();
+            foreach ($request->table as $relationTable){
+                $info  = json_decode($relationTable);
+                $dataTableRow = Voyager::model('DataTableRows');
+                $dataTableRow->data_table_id = $dataTable->id;
+                $dataTableRow->field = $info->dataType.'_groupBy_'.$info->column;
+                $dataTableRow->details = (object)[
+                    'slug'=>$info->dataType,
+                    'column'=>$info->column,
+                    'show_field'=>$info->show_field
+                ];
+                $dataTableRow->display_name = $info->dataType.'_groupBy_'.$info->column;
+                $dataTableRow->type = 'groupBy';
+                $dataTableRow->order = ++$order;
+                $dataTableRow->save();
+            }
+
+            return redirect()->back();
         }catch (Exception $e){
-            return back()->with([
-                'message'    => 'Errpr updating smart table options.',
-                'alert-type' => 'error',
-            ]);
+            echo $e;
         }
     }
 
@@ -774,70 +824,131 @@ class VoyagerBreadController extends Controller
 
 
     public function saveSmartData(Request $request){
-//        try {
-//            DB::beginTransaction();
-             //GET THE DataType based on the slug
-            $dataTable = Voyager::model('DataTable')->find($request->input('table_id'));
+        // try {
+        //     DB::beginTransaction();
+        $data_type_id = Voyager::model('dataTable')->where('id', $request->table_id)->first()->data_type_id;
 
-            $dataType = $dataTable->dataType()->first();
-            if ($request->redirect_data){
-                $redirectTableColumn = $dataType->rows->where('type','relationship')->where('details.table',key($request->redirect_data))->first()->details->column;
-                $redirectTableValue = $request->redirect_data[key($request->redirect_data)];
-            }
-            //delete
-            $deletedVaules = DB::table($dataType->name)->when(isset($redirectTableColumn) && isset($redirectTableValue), function ($query) use($redirectTableColumn,$redirectTableValue) {
-                    return $query->where($redirectTableColumn,$redirectTableValue);
-            });
-            $delete = call_user_func([$deletedVaules, "delete"]);
+        $data = collect(json_decode($request->data))->map(function($row) use ($data_type_id){
+            static $groups = [];
+            static $flag = false;
+            $row =  get_object_vars($row);
 
-            $tableRows = $request->data;
-            $j = 0;
+            if( $value = gettype(array_values($row)[0]) !== 'string'){
+                $flag = false;
+                if(!empty($groups)) $row = array_merge( $row, $groups);
 
+                return $row;
+            }else{
+                if($flag == false) $groups = [];
+                $flag = true;
 
-
-            foreach ($tableRows as $record){
-            $groupType = false;
-            if (isset($dataTable->details->groupKeys)){
-                foreach ($dataTable->details->groupKeys as $key => $groupp){
-                    $dataTypeGroup = Voyager::model('DataType')->where('name', '=', $groupp->dataType)->first();
-                    $dataTypeGroupContent = strlen($dataTypeGroup->model_name) != 0 ? app($dataTypeGroup->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
-                    if ($dataTypeGroupContent->where('name',$record[0])->first()) {
-                        $groupData[$groupp->column] = $dataTypeGroupContent->where('name', $record[0])->first();
-                        $groupType = true;
-                    }
+                $translationRow = Voyager::model('Translation')->where('value', $value)->get();
+                $relationSlug = $translationRow->pluck('table_name')->first();
+                $relationId = $translationRow->pluck('foreign_key')->first();
+                $column = Voyager::model('DataRow')->where('data_type_id', $data_type_id)->where('type','relationship')->get()->where('details.table',$relationSlug)->first();
+                if(!empty($column)){
+                    $columnName = $column->details->column;
+                    $groups = array_merge($groups,[$columnName => $relationId]);
                 }
+                return $groups;
             }
-            if (!$groupType){
-                $j++;
-                $data = new $dataType->model_name;
-                $i = 0;
-                $browseRows = $dataTable->browseRows->where('details.nesthead','>',-1)->groupBy('details.nesthead')->sortKeys()->map(function ($columns) use(&$iii){
-                    return $columns->map(function ($column) use(&$iii){
-                        $iii++;
-                        $column->order = $iii;
-                        return $column;
-                    });
-                })->collapse();
+        })->filter();
+//        dd($data);
 
-                foreach ($browseRows as $column) {
-                    if ($column->type=="relationship" && isset($column->details->column))
-                        $data[$column->details->column] = $record[$i];
-                    elseif ($column->type!="relationship")
-                        $data[$column->field] = $record[$i];
-                    $i++;
-                }
-
-                if (isset($dataTable->details->groupKeys)){
-                    foreach ($groupData as $key => $val) {
-                        $data->{$key} = $val->id;
-                    }
-                }
-
-                if (isset($redirectTableColumn) && isset($redirectTableValue))
-                    $data->{$redirectTableColumn} = $redirectTableValue;
-                $data->order = $j;
-                $data->save();
-            }
+        $dataTable = Voyager::model('DataTable')->find($request->input('table_id'));
+        $model = $dataTable->dataType->model_name;
+        foreach($data as $key => $value){
+            dd($model, $model::where ('id', $key)->get());
+            dd($key);
+            $model::where ('id', $key)->update((array)$value);
         }
+
+        // DB::commit();
+        // activity($dataTable->dataType->slug)
+        // ->performedOn($dataTable->dataType)
+        // ->causedBy(\Auth::user())
+        // ->withProperties($request->all())
+        // ->log($request->getMethod());
+
+        //     return Response::json( ['message'   => 'Successfully updated smart table.',
+        //         'alert-type' => 'success'] );
+
+        // }catch(\Exception $e) {
+        //     DB::rollBack();
+
+        //     return Response::json( ['message'    => 'Error while updating smart table.',
+        //         'alert-type' => 'error'] );
+        // }
     }
+
+    // public function saveSmartData(Request $request){
+    //    try {
+    //        DB::beginTransaction();
+    //          GET THE DataType based on the slug
+    //         $dataTable = Voyager::model('DataTable')->find($request->input('table_id'));
+    //         $dataType = $dataTable->dataType;
+
+    //         if (!empty($request->redirect_data)){
+    //             $redirectTableColumn = $dataType->rows->where('type','relationship')->where('details.table',key($request->redirect_data))->first()->details->column;
+    //             $redirectTableValue = $request->redirect_data[key($request->redirect_data)];
+    //         }
+    //         delete
+    //         if (isset($redirectTableColumn) && isset($redirectTableValue)){
+    //             $deletedVaules = DB::table($dataType->name)->where($redirectTableColumn,$redirectTableValue);
+    //         }else{
+    //             $deletedVaules = DB::table($dataType->name);
+    //         }
+
+    //         $delete = call_user_func([$deletedVaules, "delete"]);
+
+    //         $tableRows = $request->data;
+    //         dd($tableRows);
+
+    //         foreach ($tableRows as $record){
+    //             dd($record);
+    //             $groupType = false;
+
+    //         if (isset($dataTable->details->groupKeys)){
+    //             foreach ($dataTable->details->groupKeys as $key => $groupp){
+    //                 $dataTypeGroup = Voyager::model('DataType')->where('name', '=', $groupp->dataType)->first();
+    //                 $dataTypeGroupContent = strlen($dataTypeGroup->model_name) != 0 ? app($dataTypeGroup->model_name)->get() : call_user_func([DB::table($dataType->name), "get"]);
+    //                 if ($dataTypeGroupContent->where('name',$record[0])->first()) {
+    //                     $groupData[$groupp->column] = $dataTypeGroupContent->where('name', $record[0])->first();
+    //                     $groupType = true;
+    //                 }
+    //             }
+    //         }
+    //         if (!$groupType){
+    //             $j++;
+    //             $data = new $dataType->model_name;
+    //             $i = 0;
+    //             $browseRows = $dataTable->browseRows->where('details.nesthead','>',-1)->groupBy('details.nesthead')->sortKeys()->map(function ($columns) use(&$iii){
+    //                 return $columns->map(function ($column) use(&$iii){
+    //                     $iii++;
+    //                     $column->order = $iii;
+    //                     return $column;
+    //                 });
+    //             })->collapse();
+
+    //             foreach ($browseRows as $column) {
+    //                 if ($column->type=="relationship" && isset($column->details->column))
+    //                     $data[$column->details->column] = $record[$i];
+    //                 elseif ($column->type!="relationship")
+    //                     $data[$column->field] = $record[$i];
+    //                 $i++;
+    //             }
+
+    //             if (isset($dataTable->details->groupKeys)){
+    //                 foreach ($groupData as $key => $val) {
+    //                     $data->{$key} = $val->id;
+    //                 }
+    //             }
+
+    //             if (isset($redirectTableColumn) && isset($redirectTableValue))
+    //                 $data->{$redirectTableColumn} = $redirectTableValue;
+    //             $data->order = $j;
+    //             $data->save();
+    //         }
+    //     }
+    // }
 }

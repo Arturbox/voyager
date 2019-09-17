@@ -385,6 +385,12 @@ class VoyagerBaseController extends Controller
             if ($request->ajax()) {
                 return response()->json(['success' => true, 'data' => $data]);
             }
+            //add deleting data in activity log data
+//            activity($slug)
+//                ->performedOn($data)
+//                ->causedBy(\Auth::user())
+//                ->withProperties($val->getData())
+//                ->log($request->getMethod());
 
             return redirect()
                 ->route("voyager.{$dataType->slug}.index")
@@ -794,6 +800,8 @@ class VoyagerBaseController extends Controller
                 $fields[] = $dataFieldName;
             }
 
+            $parentFieldName = false;
+            $parentFieldId = false;
             if(isset(Session::all()[$slug]->tables)){
                 $parentFieldName = Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship')->where('details.table',key(Session::all()[$slug]->tables))->first()->details->column;
                 $parentFieldId =  Session::all()[$slug]->tables[key(Session::all()[$slug]->tables)];
@@ -801,12 +809,19 @@ class VoyagerBaseController extends Controller
             }
             $model->order = 0;
             if ($model->save()) {
-                $model::query()->when(isset($parentFieldName), function ($query) use ($parentFieldName, $parentFieldId) {
+                $model::query()->when($parentFieldName, function ($query) use ($parentFieldName, $parentFieldId) {
                     return $query->where($parentFieldName, $parentFieldId);
                 })->orderByRaw(DB::raw(implode(' , ', $fields)))->get()->map(function ($value, $key) {
                     $value->order = $key + 1;
                     $value->save();
                 });
+
+                //add deleting data in activity log data
+//                activity($slug)
+//                    ->performedOn($dataType)
+//                    ->causedBy(\Auth::user())
+//                    ->withProperties($request->all())
+//                    ->log($request->getMethod());
 
                 DB::commit();
                 return back()->with(['message' => 'Successfully created new smart table row.',
