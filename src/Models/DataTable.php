@@ -35,6 +35,10 @@ class DataTable extends Model
         return $this->columns()->where('type','<>', 'groupBy');
     }
 
+    public function groupRows(){
+        return $this->columns()->where('type','groupBy');
+    }
+
     public function browseRows()
     {
         return $this->columns()->where('browse', 1);
@@ -194,9 +198,10 @@ class DataTable extends Model
 
     public function reverseBySmart($dataType,$dataTableContent){
         // Nesthead Grouped Smart tables columns
-        $groupRows = $this->browseRows->where('details.nesthead','>',-1)->groupBy('details.nesthead')->sortKeys();
-
-        $this->rowsByContent = $groupRows->collapse();
+        $browseRows = $this->browseRows->where('details.nesthead','>',-1);
+        $exceptGroupRows = $browseRows->whereNotIn('field',$this->groupRows->pluck('details.column')->toArray())->groupBy('details.nesthead')->sortKeys();
+        $browseRows = $browseRows->groupBy('details.nesthead')->sortKeys();
+        $this->rowsByContent = $browseRows->collapse();
 
         // Smart tables columns
         $this->dataContent = $this->mergeSmartSelectedValues($dataTableContent);
@@ -211,7 +216,7 @@ class DataTable extends Model
         $nestChildrenTableField = [];
 
         $nestHead = $this->nesthead?Voyager::model('DataType')->where('id',$this->nesthead)->first():false;
-        $groupRows->map(function ($columns,$id) use($nestHead,&$nestParent,&$nestChildrenTable,&$nestChildrenTableField){
+        $exceptGroupRows->map(function ($columns,$id) use($nestHead,&$nestParent,&$nestChildrenTable,&$nestChildrenTableField){
             if ($id){
                 $nestHeadDataTypeContent = strlen($nestHead->model_name) != 0 ? app($nestHead->model_name)->where('id',$id)->first() : call_user_func([DB::table($nestHead->name), "get"])->where('id',$id)->first();
                 $nestParent[$id] = (object)['title'=>$nestHeadDataTypeContent->translate(App()->getLocale())->name, 'colspan'=> $columns->count()];
@@ -252,13 +257,14 @@ class DataTable extends Model
         if ($groups->count()){
             $groupsData = $groups->pluck('details');
             $dataByGroup = collect([]);
-            $this->dataContent->groupBy($groupsData->pluck('column')->toArray())->recursiveGroups($groupsData->toArray(),$this->mergedListRows,$dataByGroup);
+            $this->dataContent->groupBy($groupsData->pluck('column')->toArray())->recursiveGroups($groupsData->toArray(),$this->mergedListRows,$dataByGroup,$this->groupRows->count());
             $this->dataContent = $dataByGroup;
             $this->groups = $groupsData->map(function ($group){
                 $dataTypeGroup = Voyager::model('DataType')->where('slug', '=', $group->slug)->first();
                 $dataTypeGroupContent = strlen($dataTypeGroup->model_name) != 0 ? app($dataTypeGroup->model_name)->get() : call_user_func([DB::table($dataTypeGroup->name), "get"]);
                 return (object)['dataContent'=>$dataTypeGroupContent,'field'=>$group->show_field, 'dataType'=> $group->slug];
             });
+            $this->mergedListRows = $this->mergedListRows->except($this->groupRows->pluck('details.column')->toArray());
         }
 
         // $this->showHiddenColumns = $this->mergedListRows->map(function ($item,$key) {
