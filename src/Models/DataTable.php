@@ -257,7 +257,7 @@ class DataTable extends Model
         if ($groups->count()){
             $groupsData = $groups->pluck('details');
             $dataByGroup = collect([]);
-            $this->dataContent->groupBy($groupsData->pluck('column')->toArray())->recursiveGroups($groupsData->toArray(),$this->mergedListRows,$dataByGroup,$this->groupRows->count());
+            $this->dataContent->groupBy($groupsData->pluck('column')->toArray())->recursiveGroups($groupsData->toArray(),$this->mergedListRows,$dataByGroup);
             $this->dataContent = $dataByGroup;
             $this->groups = $groupsData->map(function ($group){
                 $dataTypeGroup = Voyager::model('DataType')->where('slug', '=', $group->slug)->first();
