@@ -767,28 +767,26 @@ class VoyagerBreadController extends Controller
 
     public function saveSmartGroupTable(Request $request){
         try{
-            $dataTable = DataTable::find($request->data_table_id);
-//            $dataTable->columns->where('type','groupBy')->delete();
-            $order = $dataTable->lastColumn();
-            foreach ($request->table as $relationTable){
-                $info  = json_decode($relationTable);
-                $dataTableRow = Voyager::model('DataTableRows');
-                $dataTableRow->data_table_id = $dataTable->id;
-                $dataTableRow->field = $info->dataType.'_groupBy_'.$info->column;
-                $dataTableRow->details = (object)[
-                    'slug'=>$info->dataType,
-                    'column'=>$info->column,
-                    'show_field'=>$info->show_field
-                ];
-                $dataTableRow->display_name = $info->dataType.'_groupBy_'.$info->column;
-                $dataTableRow->type = 'groupBy';
-                $dataTableRow->order = ++$order;
-                $dataTableRow->save();
-            }
 
-            return redirect()->back();
+            $dataTable = DataTable::find($request->data_table_id);
+
+            if($dataTable->updateSmartTableGroups($request->table)){
+                return back()->with([
+                    'message'    => 'Successfully updated Smart Table Groups:.',
+                    'alert-type' => 'success',
+                ]);
+
+            }
+            return back()->with([
+                'message'    => 'Error while updating Smart Table Groups:',
+                'alert-type' => 'error',
+            ]);
+
         }catch (Exception $e){
-            echo $e;
+            return back()->with([
+                'message'    => 'Error while updating Smart Table Groups: '.$e->getMessage(),
+                'alert-type' => 'error',
+            ]);
         }
     }
 

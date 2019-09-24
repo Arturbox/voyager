@@ -383,6 +383,44 @@ class DataTable extends Model
     }
 
 
+    public function updateSmartTableGroups( $requestData , $throw = false )
+    {
+        try {
+            $groups = $this->columns()->where('type', 'groupBy');
+            $oldFields = $groups->pluck('field')->toArray();
+            $order = $this->lastColumn();
+
+            foreach ($requestData as $data)
+            {
+                if ($data = json_decode($data)){
+                    $field = $data->dataType.'_groupBy_'.$data->column;
+                    if( ($key = array_search($field, $oldFields)) !== false )
+                        unset($oldFields[$key]);
+                    $data = [
+                        'data_table_id' => $this->id,
+                        'field'         => $field,
+                        'display_name'  => $field,
+                        'type'          => 'groupBy',
+                        'order'         => ++$order,
+                        'details'       => json_encode([
+                            'slug'       => $data -> dataType,
+                            'column'     => $data -> column,
+                            'show_field' => $data -> show_field
+                        ]),
+                    ];
+                    $this->columns()->updateOrInsert(['field' => $field], $data);
+                }
+            }
+            if(!empty($oldFields))
+                $this->columns()->whereIn('field', $oldFields)->delete();
+
+            return true;
+        }catch (\Exception $e){
+            if ($throw) throw $e;
+        }
+    }
+
+
     public function relationshipField()
     {
         return @$this->details->column;
