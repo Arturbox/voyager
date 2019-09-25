@@ -267,6 +267,7 @@ class DataTable extends Model
             $this->mergedListRows = $this->mergedListRows->except($this->groupRows->pluck('details.column')->toArray());
         }
 
+        $this->recordIds = $dataTableContent->pluck('id');
         // $this->showHiddenColumns = $this->mergedListRows->map(function ($item,$key) {
         //     return '"#spreadsheet-'.$this->id.' thead tr:not(.jexcel_nested) td[data-x='.$key.']"';
         // });
