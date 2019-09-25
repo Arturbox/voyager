@@ -834,23 +834,28 @@ class VoyagerBreadController extends Controller
                 $redirectTableColumn = $dataType->rows->where('type','relationship')->where('details.table',key($request->redirect_data))->first()->details->column;
                 $redirectData        = [$redirectTableColumn => $request->redirect_data[key($request->redirect_data)]];
             }
+            $oldFields = $model::query()->when(isset($redirectData),function ($query) use($redirectData){
+                return $query->where($redirectData);
+            })->pluck('id')->toArray();
 
             foreach ($request->data as $i=>$data) {
 
                 $matchAttr = ['id' => $data['id'] ];
-
+                if( ($key = array_search($data['id'], $oldFields)) !== false )
+                    unset($oldFields[$key]);
                 $keys = array_diff(array_keys($model::first()->getAttributes()), ['id']);
                 $data = array_filter($data, function ($key) use ($keys) {
                     return in_array($key, $keys);
                 }, ARRAY_FILTER_USE_KEY);
 
-                if (isset($redirectData)) {
+                if (isset($redirectData))
                     $data = array_merge($data, $redirectData);
-                }
+
                 $data['order'] = $i+1;
                 $model::updateOrInsert($matchAttr, $data);
             }
 
+            if(!empty($oldFields)) $model::whereIn('id', $oldFields)->delete();
             DB::commit();
 
             return Response::json( ['message'   => 'Successfully updated Smart-table.',
