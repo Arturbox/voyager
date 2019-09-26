@@ -2,7 +2,7 @@
 
 namespace TCG\Voyager\Actions;
 
-class ChildRedirectAction extends AbstractAction
+class ChildRedirectEditAction extends AbstractAction
 {
     public function getTitle()
     {
@@ -16,7 +16,7 @@ class ChildRedirectAction extends AbstractAction
 
     public function getPolicy()
     {
-        return 'read';
+        return 'edit';
     }
 
     public function getRediractable()

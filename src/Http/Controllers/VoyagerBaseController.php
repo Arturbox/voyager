@@ -12,7 +12,8 @@ use TCG\Voyager\Events\BreadImagesDeleted;
 use TCG\Voyager\Facades\Voyager;
 use TCG\Voyager\Http\Controllers\Traits\BreadRelationshipParser;
 use Illuminate\Support\Facades\Session;
-use TCG\Voyager\Actions\ChildRedirectAction;
+use TCG\Voyager\Actions\ChildRedirectEditAction;
+use TCG\Voyager\Actions\ChildRedirectShowAction;
 use TCG\Voyager\Actions\RestoreAction;
 use TCG\Voyager\Models\DataFilter;
 use TCG\Voyager\Models\DataTable;
@@ -126,8 +127,10 @@ class VoyagerBaseController extends Controller
         // Check if a default search key is set
         $defaultSearchKey = isset($dataType->default_search_key) ? $dataType->default_search_key : null;
 
-        if( isset($dataType->details->redirect) && $dataType->child_redirect > 0 )
-            Voyager::addAction(ChildRedirectAction::class);
+        if( isset($dataType->details->redirect) && $dataType->child_redirect > 0 ){
+            Voyager::addAction(ChildRedirectEditAction::class);
+            Voyager::addAction(ChildRedirectShowAction::class);
+        }
 
         $view = 'voyager::bread.browse';
 
