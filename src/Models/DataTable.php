@@ -272,6 +272,42 @@ class DataTable extends Model
         //     return '"#spreadsheet-'.$this->id.' thead tr:not(.jexcel_nested) td[data-x='.$key.']"';
         // });
 
+
+
+//formula
+        $this->letterFields = $this->rowsByContent->map(function ($row,$i){
+            return $this->getNameFromNumber($i);
+        });
+
+        $this->rowsByContent->where("details.formula")->map(function ($row)  {
+            $this->dataContent->map(function ($data) use($row){
+                $this->i = $this->i+1;
+                if ($data->has($row->field)){
+                    $data->put($row->field, preg_replace_callback("/[a-zA-Z]+/",function ($input){
+                            if ($this->letterFields->search($input[0])!==false)
+                                return $input[0].$this->i;
+                            return $input[0];
+                        },$row->details->formula)
+                    );
+                }
+                return $data;
+            });
+            $this->i = 0;
+        });
+
+
+
+        $this->rowsByContent->where("details.formula")->map(function ($row) {
+            return $this->dataContent->map(function ($data) use ($row) {
+                if (isset($column->details->formula))
+                    $data->{$column->field} = preg_replace_callback("/[a-zA-Z]+/", function ($input) {
+                        if ($this->letterFields->search($input[0]) !== false)
+                            return $input[0] . $this->i;
+                        return $input[0];
+                    }, $column->details->formula);
+            });
+        });
+
         return $this;
     }
 
