@@ -753,7 +753,7 @@ class VoyagerBreadController extends Controller
             $fields = $dataType->rows->where('type','relationship')->pluck('details')->pluck('column','table')->toArray();
             if (array_key_exists($item->details->table,$fields))
             {
-                return ['dataType' => $item->details->table, 'column'=>$item->details->column, 'show_field'=>$item->details->label];
+                return ['dataType' => $item->details->table, 'column'=>$fields[$item->details->table], 'show_field'=>$item->details->label];
             }
         })->filter()->values()->toArray();
 
