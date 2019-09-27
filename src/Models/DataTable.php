@@ -280,14 +280,27 @@ class DataTable extends Model
         });
 
         $this->rowsByContent->where("details.formula")->map(function ($row)  {
+            $this->isGroupedFormula = false;
+            $this->formula = false;
             $this->dataContent->map(function ($data) use($row){
                 $this->i = $this->i+1;
+                if ($this->isGroupedFormula == false){
+                    $this->formula = $row->details->formula;
+                }
+                if (isset($row->details->formulaField)){
+                    $formula = $row->details->formula;
+                    $formulaGroup = eval("return $formula;");
+                    if (isset($data['groupCount']) && $data['field'] == $row->details->formulaField){
+                        $this->formula = isset($formulaGroup[$data['id']])?$formulaGroup[$data['id']]:$formulaGroup[key($formulaGroup)];
+                        $this->isGroupedFormula = true;
+                    }
+                }
                 if ($data->has($row->field)){
                     $data->put($row->field, preg_replace_callback("/[a-zA-Z]+/",function ($input){
                             if ($this->letterFields->search($input[0])!==false)
                                 return $input[0].$this->i;
                             return $input[0];
-                        },$row->details->formula)
+                        },$this->formula)
                     );
                 }
                 return $data;
@@ -296,17 +309,6 @@ class DataTable extends Model
         });
 
 
-
-        $this->rowsByContent->where("details.formula")->map(function ($row) {
-            return $this->dataContent->map(function ($data) use ($row) {
-                if (isset($column->details->formula))
-                    $data->{$column->field} = preg_replace_callback("/[a-zA-Z]+/", function ($input) {
-                        if ($this->letterFields->search($input[0]) !== false)
-                            return $input[0] . $this->i;
-                        return $input[0];
-                    }, $column->details->formula);
-            });
-        });
 
         return $this;
     }
