@@ -15,6 +15,8 @@ use Illuminate\Support\Facades\Session;
 use TCG\Voyager\Actions\ChildRedirectEditAction;
 use TCG\Voyager\Actions\ChildRedirectShowAction;
 use TCG\Voyager\Actions\RestoreAction;
+use TCG\Voyager\Actions\ViewAction;
+use TCG\Voyager\Actions\EditAction;
 use TCG\Voyager\Models\DataFilter;
 use TCG\Voyager\Models\DataTable;
 
@@ -130,6 +132,8 @@ class VoyagerBaseController extends Controller
         if( isset($dataType->details->redirect) && $dataType->child_redirect > 0 ){
             Voyager::addAction(ChildRedirectEditAction::class);
             Voyager::addAction(ChildRedirectShowAction::class);
+            Voyager::removeAction(ViewAction::class);
+            Voyager::removeAction(EditAction::class);
         }
 
         $view = 'voyager::bread.browse';
@@ -139,15 +143,18 @@ class VoyagerBaseController extends Controller
         }
 
         /*********** SMART TABLE*********/
-        if ($dataTables = DataTable::where('data_type_id', '=',$dataType->id)->count()
-        ){
+        if ($dataTables = DataTable::where('data_type_id', '=',$dataType->id)->count())
+        {
             if ($dataTypeContent->count())
                 $dataTypeContent = $dataTypeContent->sortBy('order');
             $dataTables = DataTable::where('data_type_id', '=',$dataType->id)->get();
             $dataTables->map(function ($dataTable) use($dataType,$dataTypeContent){
                 return $dataTable->reverseBySmart($dataType,$dataTypeContent);
             });
-            $view = 'voyager::bread.browse-smart';
+            if (Session::has('smart-type'))
+                $view = 'voyager::bread.'.Session::get('smart-type').'-smart';
+            else
+                $view = 'voyager::bread.edit-smart';
         }
         /********************/
 
@@ -761,6 +768,7 @@ class VoyagerBaseController extends Controller
             $redirect = Voyager::model('DataType')->whereName($request->table)->pluck('details')->pluck('redirect')->first();
             Session::forget($redirect);
             $sessionData = ['tables' => [$request->table => $id]];
+            Session::put('smart-type',$request->post('type'));
             Session::put($redirect,(object)$sessionData);
 
             return redirect(route("voyager.".$redirect.".index"));

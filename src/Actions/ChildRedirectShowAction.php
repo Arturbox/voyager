@@ -11,7 +11,7 @@ class ChildRedirectShowAction extends AbstractAction
 
     public function getIcon()
     {
-        return 'voyager-tree';
+        return 'voyager-eye';
     }
 
     public function getPolicy()
@@ -27,9 +27,9 @@ class ChildRedirectShowAction extends AbstractAction
     public function getAttributes()
     {
         return [
-            'class' => 'btn btn-sm btn-primary pull-right redirect',
-            'style' => 'margin: 0px 5px 0px 1px; padding: 3px 9px;',
+            'class' => 'btn btn-sm btn-warning pull-right redirect',
             'data-id' => $this->data->{$this->data->getKeyName()},
+            'data-type' =>'read',
             'id'      => 'redirect-'.$this->data->{$this->data->getKeyName()},
         ];
     }

@@ -11,7 +11,7 @@ class ChildRedirectEditAction extends AbstractAction
 
     public function getIcon()
     {
-        return 'voyager-tree';
+        return 'voyager-edit';
     }
 
     public function getPolicy()
@@ -28,8 +28,8 @@ class ChildRedirectEditAction extends AbstractAction
     {
         return [
             'class' => 'btn btn-sm btn-primary pull-right redirect',
-            'style' => 'margin: 0px 5px 0px 1px; padding: 3px 9px;',
             'data-id' => $this->data->{$this->data->getKeyName()},
+            'data-type' =>'edit',
             'id'      => 'redirect-'.$this->data->{$this->data->getKeyName()},
         ];
     }
