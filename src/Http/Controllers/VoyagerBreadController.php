@@ -830,11 +830,12 @@ class VoyagerBreadController extends Controller
             $dataType = DataType::find($request->data_type_id);
             $model    = $dataType->model_name;
 
+            $redirectData = false;
             if($request->redirect_data){
                 $redirectTableColumn = $dataType->rows->where('type','relationship')->where('details.table',key($request->redirect_data))->first()->details->column;
                 $redirectData        = [$redirectTableColumn => $request->redirect_data[key($request->redirect_data)]];
             }
-            $oldFields = $model::query()->when(isset($redirectData),function ($query) use($redirectData){
+            $oldFields = $model::query()->when(!empty($redirectData),function ($query) use($redirectData){
                 return $query->where($redirectData);
             })->pluck('id')->toArray();
 
@@ -848,7 +849,7 @@ class VoyagerBreadController extends Controller
                     return in_array($key, $keys);
                 }, ARRAY_FILTER_USE_KEY);
 
-                if (isset($redirectData))
+                if (!empty($redirectData))
                     $data = array_merge($data, $redirectData);
 
                 $data['order'] = $i+1;
