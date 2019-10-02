@@ -308,9 +308,19 @@ class DataTable extends Model
             $this->i = 0;
         });
 
-
+        $this->computationGroupField = $this->getComputationFields('computationGroupField')->first();
+        $this->computationFields = $this->getComputationFields('computationFields');
 
         return $this;
+    }
+
+    public function getComputationFields($param){
+        $columns = $this->rowsByContent->where('details.'.$param,true);
+        return $columns->map(function ($column){
+            if ($column->type == 'relationship' && isset($column->details->column))
+                return $column->details->column;
+            return $column->field;
+        });
     }
 
     public function getDropdownBindData($columnDetails, $columnBindDetails,$tableDataType, $tableDataRowDetails)
