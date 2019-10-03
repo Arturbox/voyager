@@ -361,7 +361,7 @@ class DataTable extends Model
             });
         }
         elseif($column->details->type == 'dropdown'){
-            $array[key($array)]->order_relation = $columnBind->keys()->first()-1;
+            $array[key($array)]->order_relation = $columnBind->keys()->first()-$this->groupRows->count();
         }
         return  $array;
     }
