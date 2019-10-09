@@ -506,9 +506,9 @@ class DataTable extends Model
             })->pluck('id')->toArray();
 
 
-            for ($i = 0 ; $i <  isset($data['data'])?count($data['data']):0 ; $i++) {
+            for ($i = 0 ; $i <  (isset($data['data'])?count($data['data']):0) ; $i++) {
                 $id = $data['data'][$i]['id'];
-                if( ($key = array_search($data['data'][$i]['id'], $oldFields)) !== false )
+                if( ($key = array_search($id, $oldFields)) !== false )
                     unset($oldFields[$key]);
 
                 $keys = array_diff(Schema::getColumnListing($this->dataType->slug), ['id']);
