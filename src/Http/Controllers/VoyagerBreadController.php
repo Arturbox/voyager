@@ -828,7 +828,7 @@ class VoyagerBreadController extends Controller
     public function saveSmartData(Request $request)
     {
         try{
-            $DataTable = DataTable::find($request->data_table);
+            $DataTable = DataTable::find($request->table_id);
 
             $response = $DataTable->saveSmartData($request->all());
 
