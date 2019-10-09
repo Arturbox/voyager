@@ -827,50 +827,35 @@ class VoyagerBreadController extends Controller
 
     public function saveSmartData(Request $request)
     {
-        try {
-            DB::beginTransaction();
+        try{
+            $DataTable = DataTable::find($request->data_table);
 
-            $dataType = DataType::find($request->data_type_id);
-            $model    = $dataType->model_name;
+            $response = $DataTable->saveSmartData($request->all());
 
-            $redirectData = false;
-            if($request->redirect_data){
-                $redirectTableColumn = $dataType->rows->where('type','relationship')->where('details.table',key($request->redirect_data))->first()->details->column;
-                $redirectData        = [$redirectTableColumn => $request->redirect_data[key($request->redirect_data)]];
+            if(isset($response['status']) && $res = $response['status'] ){
+
+                $log_data                  = $response['log_data'];
+                $log_data['redirect_data'] = $response['redirect'];
+
+                activity($DataTable->dataType->slug)
+                    -> performedOn($DataTable->dataType)
+                    -> causedBy('sdjass')
+                    -> withProperties($log_data)
+                    -> tap(function ($activity) {
+                        $activity->type = 'smart';
+                    })
+                    -> log($request->getMethod());
             }
-            $oldFields = $model::query()->when(!empty($redirectData),function ($query) use($redirectData){
-                return $query->where($redirectData);
-            })->pluck('id')->toArray();
+            return Response::json( $res ? ['message'    => 'Successfully updated Smart-table.',
+                'alert-type' => 'success' ] :
+                ['message'    => 'Error while updating Smart-table.',
+                    'alert-type' => 'error'   ]);
+        }catch (Exception $e){
 
-            foreach ($request->data as $i=>$data) {
-
-                $matchAttr = ['id' => $data['id'] ];
-                if( ($key = array_search($data['id'], $oldFields)) !== false )
-                    unset($oldFields[$key]);
-                $keys = array_diff(array_keys($model::first()->getAttributes()), ['id']);
-                $data = array_filter($data, function ($key) use ($keys) {
-                    return in_array($key, $keys);
-                }, ARRAY_FILTER_USE_KEY);
-
-                if (!empty($redirectData))
-                    $data = array_merge($data, $redirectData);
-
-                $data['order'] = $i+1;
-                $model::updateOrInsert($matchAttr, $data);
-            }
-
-            if(!empty($oldFields)) $model::whereIn('id', $oldFields)->delete();
-            DB::commit();
-
-            return Response::json( ['message'   => 'Successfully updated Smart-table.',
-                'alert-type' => 'success'] );
-
-        }catch(\Exception $e){
-
-            DB::rollBack();
-
-            return Response::json( ['message'    => 'Error while updating Smart-table.',
-                'alert-type' => 'error'] );
+            return  Response::json([
+                'message'    => 'An exception was occured while updating Smart-table:'.$e->getMessage(),
+                'alert-type' => 'error',
+            ]);
         }
     }
 }

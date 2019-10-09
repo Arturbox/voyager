@@ -21,6 +21,7 @@ use TCG\Voyager\Http\Controllers\ContentTypes\SelectMultiple;
 use TCG\Voyager\Http\Controllers\ContentTypes\Text;
 use TCG\Voyager\Http\Controllers\ContentTypes\Timestamp;
 use TCG\Voyager\Traits\AlertsMessages;
+use TCG\Voyager\Models\DataTable;
 use Validator;
 
 abstract class Controller extends BaseController
@@ -353,17 +354,24 @@ abstract class Controller extends BaseController
         }
 
 
-        $dataSection->save();
+        $res = $dataSection->save();
 
         foreach ($multi_select as $sync_data) {
             $dataSection->belongsToMany($sync_data['model'], $sync_data['table'])->sync($sync_data['content']);
         }
 
-        return $dataSection;
+        return $res ? true : false;
     }
 
 
+    public function restoreSmartLog($request, $slug, $dataType, $data)
+    {
+        $dataLogContent  = json_decode($data->properties, true);
 
+        $DataTable = DataTable::find($dataLogContent['data_table']);
+
+        return  $DataTable->saveSmartData($dataLogContent) ? true : false;
+    }
 
 
 }

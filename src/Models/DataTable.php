@@ -8,6 +8,7 @@ use TCG\Voyager\Database\Schema\SchemaManager;
 use TCG\Voyager\Facades\Voyager;
 use TCG\Voyager\Traits\Translatable;
 use TCG\Voyager\Models\DataFilter;
+use \Illuminate\Support\Facades\Schema;
 
 class DataTable extends Model
 {
@@ -486,4 +487,67 @@ class DataTable extends Model
     {
         return json_decode(!empty($value) ? $value : '{}');
     }
+
+    public function saveSmartData($data)
+    {
+        try{
+
+            DB::beginTransaction();
+            $model = $this->dataType->model_name;
+            $redirectData = false;
+
+            if(isset($data['redirect_table'])){
+                $redirectTableColumn = $this->dataType->rows->where('type','relationship')->where('details.table',array_key_first($data['redirect_table']))->first()->details->column;
+                $redirectData        = [$redirectTableColumn => $data['redirect_table'][array_key_first($data['redirect_table'])]];
+            }
+
+            $oldFields = $model::query()->when($redirectData,function ($query) use($redirectData){
+                return $query->where($redirectData);
+            })->pluck('id')->toArray();
+
+
+            for ($i = 0 ; $i <  isset($data['data'])?count($data['data']):0 ; $i++) {
+                $id = $data['data'][$i]['id'];
+                if( ($key = array_search($data['data'][$i]['id'], $oldFields)) !== false )
+                    unset($oldFields[$key]);
+
+                $keys = array_diff(Schema::getColumnListing($this->dataType->slug), ['id']);
+
+                // Filtrum enq, vercnum enq miayn ayn toxery voronq bazayi tvyal table-um en pahvum
+                $save_data = array_filter($data['data'][$i], function ($key) use ($keys) {
+                    return in_array($key, $keys);
+                }, ARRAY_FILTER_USE_KEY);
+
+                if (!empty($redirectData))
+                    $save_data = array_merge($save_data, $redirectData);
+                $save_data['order'] = $i+1;
+                $save_data['deleted_at'] = null;
+                $instance = $this->saveWithoutFillable($model,$save_data,$id);
+                $instance->save();
+                $data['data'][$i] = $instance->toArray();
+            }
+
+
+            if(!empty($oldFields)) $model::whereIn('id', $oldFields)->delete();
+
+            DB::commit();
+            return ['status' => true , 'redirect' => $redirectData , 'log_data' => $data];
+
+        }catch (\Exception $e){
+
+            DB::rollBack();
+            return $e;
+        }
+    }
+
+    public function saveWithoutFillable($model,$dataByFields,$id){
+        $model = app($model);
+        if ($id)
+            $model = $model->find($id);
+        foreach ($dataByFields as $field=>$data){
+            $model->{$field} = $data;
+        }
+        return $model;
+    }
+
 }
