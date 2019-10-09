@@ -798,13 +798,16 @@ class VoyagerBreadController extends Controller
 
             $dataTable = Voyager::model('DataTable')->find($request->post('table_id'))->first();
 
-            $iii = 0;
-            $dataTable->browseRows->where('details.nesthead','>',-1)->groupBy('details.nesthead')->sortKeys()->map(function ($columns)use(&$iii , $data){
-                $columns->map(function ($column) use(&$iii, $data){
+            $browseRows = $dataTable->browseRows->where('details.nesthead','>',-1);
+
+            $exceptGroupRows = $browseRows->whereNotIn('field',$dataTable->groupRows->pluck('details.column')->toArray())->groupBy('details.nesthead')->sortKeys();
+
+            $exceptGroupRows->map(function ($columns)use(&$data){
+                $columns->map(function ($column) use(&$data){
                     $details = $column->details;
-                    $details->width = $data[$iii]->width;
+                    $details->width = current($data)->width;
                     Voyager::model('DataTableRows')->where('id', $column->id)->update(['details' => json_encode($details)]);
-                    $iii++;
+                    next($data);
                 });
             });
             DB::commit();
