@@ -290,7 +290,12 @@ class DataTable extends Model
                 }
                 if (isset($row->details->formulaField)){
                     $formula = $row->details->formula;
-                    $formulaGroup = eval("return $formula;");
+                    try{
+                        $formulaGroup = eval("return $formula;");
+                    }
+                    catch (\ParseError $e){
+                        return $data;
+                    }
                     if (isset($data['groupCount']) && $data['field'] == $row->details->formulaField){
                         $this->formula = isset($formulaGroup[$data['id']])?$formulaGroup[$data['id']]:$formulaGroup[key($formulaGroup)];
                         $this->isGroupedFormula = true;
