@@ -463,21 +463,32 @@ class VoyagerBaseController extends Controller
             $ids[] = $id;
         }
         foreach ($ids as $id) {
-            $data = call_user_func([$dataType->model_name, 'findOrFail'], $id);
-            $this->cleanup($dataType, $data);
+            $data =  call_user_func([$dataType->model_name, 'findOrFail'], $id);
+
+            $log_data = array_merge($request->all(), ['deleted_at' => null]);
+
+            $transFields = $data->getTranslatableAttributes();
+
+            foreach ( $transFields as $transField){
+                $log_data[$transField.'_i18n'] = json_encode($data-> getTranslationsOf($transField));
+            }
+
+            $this -> cleanup($dataType, $data);
+
+            $res = $data->delete($id);
+
+            if($res){
+                event(new BreadDataDeleted($dataType, $data));
+
+                activity($slug)
+                    ->performedOn($data)
+                    ->causedBy(\Auth::user())
+                    ->withProperties($log_data)
+                    ->log($request->getMethod());
+            }
         }
 
         $displayName = count($ids) > 1 ? $dataType->display_name_plural : $dataType->display_name_singular;
-
-        $res = $data->destroy($ids);
-
-        if ($res)
-            //add deleting data in activity log data
-            activity($slug)
-                ->performedOn($data)
-                ->causedBy(\Auth::user())
-                ->withProperties($request->all())
-                ->log($request->getMethod());
 
         $data = $res
             ? [
@@ -488,10 +499,6 @@ class VoyagerBaseController extends Controller
                 'message'    => __('voyager::generic.error_deleting')." {$displayName}",
                 'alert-type' => 'error',
             ];
-
-        if ($res) {
-            event(new BreadDataDeleted($dataType, $data));
-        }
 
         return redirect()->route("voyager.{$dataType->slug}.index")->with($data);
     }
