@@ -299,9 +299,20 @@ class VoyagerBaseController extends Controller
         }
 
         if (!$request->ajax()) {
+
+            $log_data = $request->all();
+
             $this->insertUpdateData($request, $slug, $dataType->editRows, $data);
 
             event(new BreadDataUpdated($dataType, $data));
+
+            $log_data = array_merge($log_data, $data->getAttributes());
+
+            activity($slug)
+                ->performedOn($data)
+                ->causedBy(\Auth::user())
+                ->withProperties($log_data)
+                ->log($request->getMethod());
 
             return redirect()
                 ->route("voyager.{$dataType->slug}.index")
@@ -388,19 +399,29 @@ class VoyagerBaseController extends Controller
         }
 
         if (!$request->has('_validate')) {
-            $data = $this->insertUpdateData($request, $slug, $dataType->addRows, new $dataType->model_name());
+
+            $log_data = $request->all();
+
+            $dataSection = new $dataType->model_name;
+
+            $data = $this->insertUpdateData($request, $slug, $dataType->addRows, $dataSection );
 
             event(new BreadDataAdded($dataType, $data));
+
+            //add saving data to activity log
+            $log_data = array_merge($log_data, $data->getAttributes());
+
+            activity($slug)
+                ->performedOn($dataSection)
+                ->causedBy(\Auth::user())
+                ->withProperties($log_data)
+                ->log($request->getMethod());
 
             if ($request->ajax()) {
                 return response()->json(['success' => true, 'data' => $data]);
             }
-            //add deleting data in activity log data
-//            activity($slug)
-//                ->performedOn($data)
-//                ->causedBy(\Auth::user())
-//                ->withProperties($val->getData())
-//                ->log($request->getMethod());
+
+
 
             return redirect()
                 ->route("voyager.{$dataType->slug}.index")
