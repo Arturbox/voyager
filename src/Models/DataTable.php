@@ -2,6 +2,7 @@
 
 namespace TCG\Voyager\Models;
 
+use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use TCG\Voyager\Database\Schema\SchemaManager;
@@ -402,7 +403,7 @@ class DataTable extends Model
             return $this->rowsByContent->map(function ($column) use ($data){
 
                 if (array_key_exists($column->field, $data->attributes))
-                    return [$column->field=>$data->{$column->field}];
+                    return [$column->field=>$data->translate(App()->getLocale())->{$column->field}];
 
                 elseif($column->type == 'relationship' && isset($column->details->smart_id) ){
                     $dataTEableRelation = Voyager::model('DataTable')->where('id', $column->details->smart_id)->first();
@@ -495,64 +496,127 @@ class DataTable extends Model
 
     public function saveSmartData($data)
     {
+//        try{
+        DB::beginTransaction();
+        $redirectData = false;
+
+        $model = $this->dataType->model_name;
+
+        // Checking for redirected table data
+        if(isset($data['redirect_table'])){
+            $redirectTableColumn = $this->dataType->rows->where('type','relationship')->where('details.table',array_key_first($data['redirect_table']))->first()->details->column;
+            $redirectData        = [$redirectTableColumn => $data['redirect_table'][array_key_first($data['redirect_table'])]];
+        }
+
+        // Grabbing id-s from all rows of db table
+        $oldFields = $model::query()->when($redirectData,function ($query) use($redirectData){
+            return $query->where($redirectData);
+        })->pluck('id')->toArray();
+
+        $translatable = is_bread_translatable(app($model));
+
+        for ($i = 0 ; $i < (isset($data['data']) ? count($data['data']):0) ; $i++) {
+
+            //Get the row if exist or create a new one
+            $id = $data['data'][$i]['id'];
+            $instance = app($model);
+            if ($id){
+                $instance = app($model)->withTrashed()->where('id',$id)->first();
+            }
+
+            // Remove updated from $oldFields id list
+            if( ($key = array_search($id, $oldFields)) !== false )
+                unset($oldFields[$key]);
+
+            // Filtrum enq, vercnum enq miayn ayn fieldery voronq bazayi tvyal table-um en pahvum
+            $keys = array_diff(Schema::getColumnListing($this->dataType->slug), ['id']);
+            $save_data = array_filter($data['data'][$i], function ($key) use ($keys) {
+                return in_array($key, $keys);
+            }, ARRAY_FILTER_USE_KEY);
+
+            // Correction of data for saving
+            if (!empty($redirectData))
+                $save_data = array_merge($save_data, $redirectData);
+            $save_data['order'] = $i+1;
+            $save_data['deleted_at'] = null;
+
+            $this->saveWithoutFillable($instance, $save_data);
+
+
+            // Get translatable fields and translations for row
+            if ($translatable){
+                $transFields = isset($data['data'][$i]['lang']) ? $data['data'][$i]['lang'] : $this->saveWithoutTranslatable( $instance);
+
+                if (!isset($data['data'][$i]['lang']))
+                    $transFields = $this->updateTranslatabeFields($transFields,$save_data);
+                $translations = $this->getTranslationsfromData($instance, $transFields);
+
+                $data['data'][$i]['lang'] = $transFields;
+            }
+            $instance->save();
+
+            if($translations) $instance->saveTranslations($translations);
+
+
+            // Preparing data for activity log
+            $data['data'][$i] = array_merge($instance->toArray(),['lang' => $data['data'][$i]['lang']]);
+        }
+
+        if(!empty($oldFields)) $model::whereIn('id', $oldFields)->delete();
+
+        DB::commit();
+
+        return ['status' => true , 'redirect' => $redirectData , 'log_data' => $data];
+
+//        }catch (\Exception $e){
+//
+//            DB::rollBack();
+//            if ($throw) throw $e;
+//        }
+    }
+
+    public function getTranslationsfromData($instance, $lang)
+    {
         try{
+            $my_request = new Request();
+            $my_request->setMethod('POST');
+            $my_request->request->add($lang);
 
-            DB::beginTransaction();
-            $model = $this->dataType->model_name;
-            $redirectData = false;
+            return $instance->prepareTranslations($my_request);
 
-            if(isset($data['redirect_table'])){
-                $redirectTableColumn = $this->dataType->rows->where('type','relationship')->where('details.table',array_key_first($data['redirect_table']))->first()->details->column;
-                $redirectData        = [$redirectTableColumn => $data['redirect_table'][array_key_first($data['redirect_table'])]];
-            }
-
-            $oldFields = $model::query()->when($redirectData,function ($query) use($redirectData){
-                return $query->where($redirectData);
-            })->pluck('id')->toArray();
-
-
-            for ($i = 0 ; $i <  (isset($data['data'])?count($data['data']):0) ; $i++) {
-                $id = $data['data'][$i]['id'];
-                if( ($key = array_search($id, $oldFields)) !== false )
-                    unset($oldFields[$key]);
-
-                $keys = array_diff(Schema::getColumnListing($this->dataType->slug), ['id']);
-
-                // Filtrum enq, vercnum enq miayn ayn toxery voronq bazayi tvyal table-um en pahvum
-                $save_data = array_filter($data['data'][$i], function ($key) use ($keys) {
-                    return in_array($key, $keys);
-                }, ARRAY_FILTER_USE_KEY);
-
-                if (!empty($redirectData))
-                    $save_data = array_merge($save_data, $redirectData);
-                $save_data['order'] = $i+1;
-                $save_data['deleted_at'] = null;
-                $instance = $this->saveWithoutFillable($model,$save_data,$id);
-                $instance->save();
-                $data['data'][$i] = $instance->toArray();
-            }
-
-
-            if(!empty($oldFields)) $model::whereIn('id', $oldFields)->delete();
-
-            DB::commit();
-            return ['status' => true , 'redirect' => $redirectData , 'log_data' => $data];
-
-        }catch (\Exception $e){
-
-            DB::rollBack();
-            return $e;
+        }catch(\Exception $e){
+            throw $e;
         }
     }
 
-    public function saveWithoutFillable($model,$dataByFields,$id){
-        $model = app($model);
-        if ($id)
-            $model = $model->find($id);
-        foreach ($dataByFields as $field=>$data){
-            $model->{$field} = $data;
+
+    public function saveWithoutTranslatable($instance)
+    {
+        $localeFileds = [];
+        foreach ($instance->getTranslatableAttributes() as $translarableField){
+            $localeFileds[$translarableField.'_i18n'] = $instance->id ? json_encode($instance->getTranslationsOf($translarableField))
+                : json_encode(array_map(function($v){ return '';},array_flip(config('voyager.multilingual.locales'))));
         }
-        return $model;
+        return $localeFileds;
     }
 
+
+    public function updateTranslatabeFields($transFields,$save_data){
+        foreach ($transFields as $field => $value) {
+            $locate = \App::getLocale() ? \App::getLocale() : config('voyager.multilingual.default', 'en');
+            $tmp_lang = json_decode($value, true);
+            $tmp_lang [$locate] = $save_data[str_replace( '_i18n','',$field)];
+            $transFields[$field] = json_encode($tmp_lang);
+        }
+        return $transFields;
+    }
+
+
+    public function saveWithoutFillable(&$instance, $save_data)
+    {
+        foreach ($save_data as $field => $value) {
+            $instance->$field = $value;
+        }
+        return $instance;
+    }
 }

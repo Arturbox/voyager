@@ -273,7 +273,7 @@ abstract class Controller extends BaseController
     {
         $dataTypeSection = \Voyager::model('DataType')->where('model_name', '=', $data->subject_type)->first();
 
-        $dataSection = call_user_func([$dataTypeSection->model_name, 'findOrFail'], $data->subject_id);
+        $dataSection = $dataTypeSection->model_name::withTrashed()->findOrFail($data->subject_id);
 
         $dataSectionLogContent = json_decode($data->properties);
 
@@ -287,7 +287,7 @@ abstract class Controller extends BaseController
     {
         $dataLogContent  = json_decode($data->properties, true);
 
-        $DataTable = DataTable::find($dataLogContent['data_table']);
+        $DataTable = DataTable::find($dataLogContent['table_id']);
 
         return  $DataTable->saveSmartData($dataLogContent) ? true : false;
     }

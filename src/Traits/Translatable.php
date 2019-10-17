@@ -223,7 +223,7 @@ trait Translatable
         $locales = config('voyager.multilingual.locales', [$default]);
 
         foreach ($locales as $locale) {
-            if (!isset($translations[$locale])) {
+            if (!array_key_exists($locale, $translations)) {
                 continue;
             }
 
@@ -340,5 +340,23 @@ trait Translatable
                 $translation->save();
             }
         }
+    }
+
+    /**
+     * Prepare translations and set default locale field value.
+     *
+     * @param object $request
+     *
+     * @return array translations
+     */
+    public function  prepareTranslationsArray ( $trans,$field) {
+        foreach ($trans as $key => $value){
+            $trans[$key] = ($value == null) ? "" : $value;
+        }
+        $translations[$field] = $this->setAttributeTranslations(
+            $field,
+            $trans
+        );
+        return $translations;
     }
 }

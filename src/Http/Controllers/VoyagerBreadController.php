@@ -839,7 +839,7 @@ class VoyagerBreadController extends Controller
 
                 activity($DataTable->dataType->slug)
                     -> performedOn($DataTable->dataType)
-                    -> causedBy('sdjass')
+                    -> causedBy(\Auth::user())
                     -> withProperties($log_data)
                     -> tap(function ($activity) {
                         $activity->type = 'smart';
