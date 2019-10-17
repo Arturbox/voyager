@@ -201,7 +201,7 @@ class DataTable extends Model
     public function reverseBySmart($dataType,$dataTableContent){
         // Nesthead Grouped Smart tables columns
         $browseRows = $this->browseRows->where('details.nesthead','>',-1);
-        $exceptGroupRows = $browseRows->whereNotIn('field',$this->groupRows->pluck('details.column')->toArray())->groupBy('details.nesthead')->sortKeys();
+        $exceptGroupRows = $browseRows->where('field','<>','id')->whereNotIn('field',$this->groupRows->pluck('details.column')->toArray())->groupBy('details.nesthead')->sortKeys();
         $browseRows = $browseRows->groupBy('details.nesthead')->sortKeys();
         $this->rowsByContent = $browseRows->collapse();
 
