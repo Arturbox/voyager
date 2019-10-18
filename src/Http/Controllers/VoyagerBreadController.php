@@ -842,7 +842,7 @@ class VoyagerBreadController extends Controller
                     -> causedBy(\Auth::user())
                     -> withProperties($log_data)
                     -> tap(function ($activity) {
-                        $activity->type = 'smart';
+                        $activity->type = 'data_table';
                     })
                     -> log($request->getMethod());
             }

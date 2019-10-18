@@ -540,8 +540,6 @@ class DataTable extends Model
             $save_data['order'] = $i+1;
             $save_data['deleted_at'] = null;
 
-            $this->saveWithoutFillable($instance, $save_data);
-
 
             // Get translatable fields and translations for row
             if ($translatable){
@@ -549,17 +547,28 @@ class DataTable extends Model
 
                 if (!isset($data['data'][$i]['lang']))
                     $transFields = $this->updateTranslatabeFields($transFields,$save_data);
+
                 $translations = $this->getTranslationsfromData($instance, $transFields);
 
                 $data['data'][$i]['lang'] = $transFields;
-            }
-            $instance->save();
 
-            if($translations) $instance->saveTranslations($translations);
+                $save_data = $this->updateSaveData($instance,$transFields,$save_data);
+
+                $this->saveWithoutFillable($instance, $save_data);
+
+                $instance->save();
+
+                if ($translations) $instance->saveTranslations($translations);
+
+            }
+            else{
+                $this->saveWithoutFillable($instance, $save_data);
+                $instance->save();
+            }
 
 
             // Preparing data for activity log
-            $data['data'][$i] = array_merge($instance->toArray(),['lang' => $data['data'][$i]['lang']]);
+            $data['data'][$i] = isset($data['data'][$i]['lang'])? array_merge($instance->toArray(),['lang' => $data['data'][$i]['lang']]):$instance->toArray();
         }
 
         if(!empty($oldFields)) $model::whereIn('id', $oldFields)->delete();
@@ -594,7 +603,10 @@ class DataTable extends Model
     {
         $localeFileds = [];
         foreach ($instance->getTranslatableAttributes() as $translarableField){
-            $localeFileds[$translarableField.'_i18n'] = $instance->id ? json_encode($instance->getTranslationsOf($translarableField))
+            $localeFileds[$translarableField.'_i18n'] = $instance->id ? json_encode(array_map(function ($v){
+                if($v == null) return '';
+                return $v;
+            },$instance->getTranslationsOf($translarableField) ))
                 : json_encode(array_map(function($v){ return '';},array_flip(config('voyager.multilingual.locales'))));
         }
         return $localeFileds;
@@ -603,7 +615,7 @@ class DataTable extends Model
 
     public function updateTranslatabeFields($transFields,$save_data){
         foreach ($transFields as $field => $value) {
-            $locate = \App::getLocale() ? \App::getLocale() : config('voyager.multilingual.default', 'en');
+            $locate = \App::getLocale() ? \App::getLocale() : config('voyager.multilingual.default');
             $tmp_lang = json_decode($value, true);
             $tmp_lang [$locate] = $save_data[str_replace( '_i18n','',$field)];
             $transFields[$field] = json_encode($tmp_lang);
@@ -618,5 +630,18 @@ class DataTable extends Model
             $instance->$field = $value;
         }
         return $instance;
+    }
+
+    public function updateSaveData($instance,$transFields,$data){
+        $locate = \App::getLocale() ? \App::getLocale() : config('voyager.multilingual.default');
+        $default = config('voyager.multilingual.default');
+        foreach ($instance->getTranslatableAttributes() as $translarableField){
+            if (array_key_exists($translarableField."_i18n",$transFields)){
+                $fieldData = json_decode($transFields[$translarableField."_i18n"]);
+                if ($default != $locate)
+                    $data[$translarableField] = $fieldData->$default;
+            }
+        }
+        return $data;
     }
 }
