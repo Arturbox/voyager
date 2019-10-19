@@ -834,6 +834,7 @@ class VoyagerBaseController extends Controller
             $model = new $dataType->model_name;
 
             foreach ($request->post('data') as $key =>$value){
+                if (!(int)$value) continue;
                 $dataFieldName = Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship')->where('details.table',$key)->first()->details->column;
                 $model->$dataFieldName = $value;
                 $fields[] = $dataFieldName;
