@@ -770,7 +770,7 @@ class VoyagerBreadController extends Controller
 
             $dataTable = DataTable::find($request->data_table_id);
 
-            if($dataTable->updateSmartTableGroups($request->table)){
+            if($dataTable->updateSmartTableGroups($request->all())){
                 return back()->with([
                     'message'    => 'Successfully updated Smart Table Groups:.',
                     'alert-type' => 'success',

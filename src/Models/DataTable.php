@@ -446,7 +446,7 @@ class DataTable extends Model
             $oldFields = $groups->pluck('field')->toArray();
             $order = $this->lastColumn();
 
-            foreach ($requestData as $data)
+            foreach ($requestData['table'] as $key => $data)
             {
                 if ($data = json_decode($data)){
                     $field = $data->dataType.'_groupBy_'.$data->column;
@@ -461,7 +461,8 @@ class DataTable extends Model
                         'details'       => json_encode([
                             'slug'       => $data -> dataType,
                             'column'     => $data -> column,
-                            'show_field' => $data -> show_field
+                            'show_field' => $data -> show_field,
+                            'type'    => $requestData['type'][$key]
                         ]),
                     ];
                     $this->columns()->updateOrInsert(['field' => $field], $data);
