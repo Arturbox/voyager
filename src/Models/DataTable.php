@@ -555,17 +555,12 @@ class DataTable extends Model
 
                 $save_data = $this->updateSaveData($instance,$transFields,$save_data);
 
-                $this->saveWithoutFillable($instance, $save_data);
-
-                $instance->save();
-
-                if ($translations) $instance->saveTranslations($translations);
-
             }
-            else{
-                $this->saveWithoutFillable($instance, $save_data);
-                $instance->save();
-            }
+            $this->saveWithoutFillable($instance, $save_data);
+
+            $instance->save();
+
+            if ( $translatable && isset($translations) && $translations) $instance->saveTranslations($translations);
 
 
             // Preparing data for activity log
