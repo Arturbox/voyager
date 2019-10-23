@@ -618,7 +618,7 @@ class DataTable extends Model
         foreach ($transFields as $field => $value) {
             $locate = \App::getLocale() ? \App::getLocale() : config('voyager.multilingual.default');
             $tmp_lang = json_decode($value, true);
-            $tmp_lang [$locate] = $save_data[str_replace( '_i18n','',$field)];
+            $tmp_lang [$locate] = $save_data[str_replace( '_i18n','',$field)]? $save_data[str_replace( '_i18n','',$field)]:'';
             $transFields[$field] = json_encode($tmp_lang);
         }
         return $transFields;
