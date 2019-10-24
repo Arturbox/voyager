@@ -201,7 +201,7 @@ class DataTable extends Model
     public function reverseBySmart($dataType,$dataTableContent){
         // Nesthead Grouped Smart tables columns
         $browseRows = $this->browseRows->where('details.nesthead','>',-1);
-        $exceptGroupRows = $browseRows->where('field','<>','id')->whereNotIn('field',$this->groupRows->pluck('details.column')->toArray())->groupBy('details.nesthead')->sortKeys();
+        $exceptGroupRows = $browseRows->where('field','<>','id')->where('field','<>','exec_formula')->whereNotIn('field',$this->groupRows->pluck('details.column')->toArray())->groupBy('details.nesthead')->sortKeys();
         $browseRows = $browseRows->groupBy('details.nesthead')->sortKeys();
         $this->rowsByContent = $browseRows->collapse();
 
@@ -300,7 +300,14 @@ class DataTable extends Model
                     $formula = isset($formulaGroup[$data['id']]) ? $formulaGroup[$data['id']] : $formulaGroup[key($formulaGroup)];
 
                 if ($data->has($row->field))
+                {
+                    if ($data->has('exec_formula') && $execFormula = json_decode($data['exec_formula']) ){
+                        if (isset($execFormula->{$row->field}))
+                            return $data;
+                    }
                     $this->setFormula($data, $formula, $row, $key);
+                }
+
                 return $data;
             });
         });
@@ -625,7 +632,7 @@ class DataTable extends Model
     public function saveWithoutFillable(&$instance, $save_data)
     {
         foreach ($save_data as $field => $value) {
-            $instance->$field = $value;
+            $instance->$field = (is_array($value) || is_object($value))?json_encode($value):$value;
         }
         return $instance;
     }
