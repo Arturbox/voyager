@@ -274,51 +274,53 @@ class DataTable extends Model
         //     return '"#spreadsheet-'.$this->id.' thead tr:not(.jexcel_nested) td[data-x='.$key.']"';
         // });
 
-
-
-//formula
-        $this->letterFields = $this->rowsByContent->map(function ($row,$i){
-            return $this->getNameFromNumber($i);
-        });
-
-        $this->rowsByContent->where("details.formula")->map(function ($row)  {
-            $this->isGroupedFormula = false;
-            $this->formula = false;
-            $this->dataContent->map(function ($data) use($row){
-                $this->i = $this->i+1;
-                if ($this->isGroupedFormula == false){
-                    $this->formula = $row->details->formula;
-                }
-                if (isset($row->details->formulaField)){
-                    $formula = $row->details->formula;
-                    try{
-                        $formulaGroup = eval("return $formula;");
-                    }
-                    catch (\ParseError $e){
-                        return $data;
-                    }
-                    if (isset($data['groupCount']) && $data['field'] == $row->details->formulaField){
-                        $this->formula = isset($formulaGroup[$data['id']])?$formulaGroup[$data['id']]:$formulaGroup[key($formulaGroup)];
-                        $this->isGroupedFormula = true;
-                    }
-                }
-                if ($data->has($row->field)){
-                    $data->put($row->field, preg_replace_callback("/[a-zA-Z]+/",function ($input){
-                            if ($this->letterFields->search($input[0])!==false)
-                                return $input[0].$this->i;
-                            return $input[0];
-                        },$this->formula)
-                    );
-                }
-                return $data;
-            });
-            $this->i = 0;
-        });
+        $this->formula();
 
         $this->computationGroupField = $this->getComputationFields('computationGroupField')->first();
         $this->computationFields = $this->getComputationFields('computationFields');
 
         return $this;
+    }
+
+    public function formula()
+    {
+        $this->letterFields = $this->rowsByContent->map(function ($row,$i){
+            return $this->getNameFromNumber($i);
+        });
+        $this->rowsByContent->where("details.formula")->map(function ($row) {
+            $formula = $row->details->formula;
+            $formulaGroup = isset($row->details->formulaField) ? $this->getFormulaGroup($formula) : false;
+
+            if ($formulaGroup == 'continue')
+                return $row;
+
+            $this->dataContent->map(function ($data, $key) use( &$formula, $formulaGroup, $row ){
+
+                if ($formulaGroup && isset($data['groupCount']) && $data['field'] == $row->details->formulaField)
+                    $formula = isset($formulaGroup[$data['id']]) ? $formulaGroup[$data['id']] : $formulaGroup[key($formulaGroup)];
+
+                if ($data->has($row->field))
+                    $this->setFormula($data, $formula, $row, $key);
+                return $data;
+            });
+        });
+    }
+
+    public function setFormula (&$data, $formula,$row, $key) {
+        $data->put($row->field, preg_replace_callback("/[a-zA-Z]+/",function ($input) use ($key, $formula){
+            if ($this->letterFields->search($input[0])!==false)
+                return $input[0].($key+1);
+            return $input[0];
+        },$formula));
+    }
+
+    public function getFormulaGroup($formula){
+        try{
+            return eval("return $formula;");
+        }
+        catch (\ParseError $e){
+            return 'continue';
+        }
     }
 
     public function getComputationFields($param){
