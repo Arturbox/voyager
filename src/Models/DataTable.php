@@ -416,7 +416,7 @@ class DataTable extends Model
 
                 elseif($column->type == 'relationship' && isset($column->details->smart_id) ){
                     $dataTEableRelation = Voyager::model('DataTable')->where('id', $column->details->smart_id)->first();
-                    $data =app($dataTEableRelation->dataType->model_name)->where($column->details->row_info->relationshipBindColumn , $data->{$column->details->row_info->relationshipComlumn})->first();
+                    $data =app($dataTEableRelation->dataType->model_name)->where($column->details->row_info->relationshipBindColumn , $data->{$column->details->row_info->relationshipColumn})->first();
                     return empty($data)? [$column->field => null] : [$column->field => $data->{$column->details->row_info->column}];
                 }
                 elseif (isset($column->details->column) && $column->type == 'relationship'){

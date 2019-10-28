@@ -580,7 +580,7 @@ class VoyagerBreadController extends Controller
 
                             $relationshipField =  $dataTypeRelation->columns->where('type','relationship')->where('details.slug', $request->post('dataTypeRelationship'))->first()->field;
                             $rowInfo->relationshipBindColumn =$dataTypeRelation->columns->where('field', $relationshipField)->first()->details->column;
-                            $rowInfo->relationshipComlumn = $dataTable->columns->where('type','relationship')->where('details.slug', $request->post('dataTypeRelationship'))->first()->details->column;
+                            $rowInfo->relationshipColumn = $dataTable->columns->where('type','relationship')->where('details.slug', $request->post('dataTypeRelationship'))->first()->details->column;
                             $rowInfo->column = $row->field;
                         }
                         elseif ($action == 'tableValues'){
