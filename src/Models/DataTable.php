@@ -415,9 +415,9 @@ class DataTable extends Model
                     return [$column->field=>$data->translate(App()->getLocale())->{$column->field}];
 
                 elseif($column->type == 'relationship' && isset($column->details->smart_id) ){
-                    $dataTEableRelation = Voyager::model('DataTable')->where('id', $column->details->smart_id)->first();
-                    $data =app($dataTEableRelation->dataType->model_name)->where($column->details->row_info->relationshipBindColumn , $data->{$column->details->row_info->relationshipColumn})->first();
-                    return empty($data)? [$column->field => null] : [$column->field => $data->{$column->details->row_info->column}];
+                    $dataTableRelation = Voyager::model('DataTable')->where('id', $column->details->smart_id)->first();
+                    $data =app($dataTableRelation->dataType->model_name)->where($column->details->row_info->relationshipBindColumn , $data->{$column->details->row_info->relationshipColumn})->get();
+                    return empty($data->count()) ? [$column->field => null] : [$column->field => $data->pluck($column->details->row_info->column)->sum()];
                 }
                 elseif (isset($column->details->column) && $column->type == 'relationship'){
                     return [$column->field=>$data->{$column->details->column}];
