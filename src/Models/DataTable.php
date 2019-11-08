@@ -28,6 +28,8 @@ class DataTable extends Model
 
     public $timestamps = false;
 
+    protected $hiddenFields = ['id','exec_formula'];
+
     public function columns()
     {
         return $this->hasMany(Voyager::modelClass('DataTableRows'))->orderBy('order');
@@ -201,7 +203,7 @@ class DataTable extends Model
     public function reverseBySmart($dataType,$dataTableContent){
         // Nesthead Grouped Smart tables columns
         $browseRows = $this->browseRows->where('details.nesthead','>',-1);
-        $exceptGroupRows = $browseRows->where('field','<>','id')->where('field','<>','exec_formula')->whereNotIn('field',$this->groupRows->pluck('details.column')->toArray())->groupBy('details.nesthead')->sortKeys();
+        $exceptGroupRows = $browseRows->whereNotIn('field',$this->hiddenFields)->whereNotIn('field',$this->groupRows->pluck('details.column')->toArray())->groupBy('details.nesthead')->sortKeys();
         $browseRows = $browseRows->groupBy('details.nesthead')->sortKeys();
         $this->rowsByContent = $browseRows->collapse();
 
@@ -259,7 +261,7 @@ class DataTable extends Model
         if ($groups->count()){
             $groupsData = $groups->pluck('details');
             $dataByGroup = collect([]);
-            $this->dataContent->groupBy($groupsData->pluck('column')->toArray())->recursiveGroups($groupsData->toArray(),$this->mergedListRows,$dataByGroup);
+            $this->dataContent->groupBy($groupsData->pluck('column')->toArray())->recursiveGroups($groupsData->toArray(),$this->mergedListRows,$dataByGroup,count($this->hiddenFields));
             $this->dataContent = $dataByGroup;
             $this->groups = $groupsData->map(function ($group){
                 $dataTypeGroup = Voyager::model('DataType')->where('slug', '=', $group->slug)->first();
