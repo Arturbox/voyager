@@ -343,10 +343,12 @@ class DataTable extends Model
     }
     public function getComputationToMultiple($param){
         $column = $this->rowsByContent->where('type','relationship')->where('details.type','dropdown')->where('details.'.$param,true)->first();
-        return $this->mergedListRows[$column->field]->source->map(function ($data) use($column){
-            $data['column'] = $column->details->column;
-            return $data;
-        });
+        if ($column)
+            return $this->mergedListRows[$column->field]->source->map(function ($data) use($column){
+                $data['column'] = $column->details->column;
+                return $data;
+            });
+        return collect([]);
     }
 
 
