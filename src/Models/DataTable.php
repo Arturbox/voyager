@@ -346,6 +346,7 @@ class DataTable extends Model
         if ($column)
             return $this->mergedListRows[$column->field]->source->map(function ($data) use($column){
                 $data['column'] = $column->details->column;
+                $data['relationColumn'] = $column->details->computationToMultiple;
                 return $data;
             });
         return collect([]);
