@@ -28,7 +28,7 @@ class DataTable extends Model
 
     public $timestamps = false;
 
-    protected $hiddenFields = ['id','exec_formula'];
+    public $hiddenFields = ['id','exec_formula'];
 
     public function columns()
     {
@@ -520,7 +520,7 @@ class DataTable extends Model
 
     public function saveSmartData($data)
     {
-//        try{
+        try{
         DB::beginTransaction();
         $redirectData = false;
 
@@ -596,11 +596,9 @@ class DataTable extends Model
 
         return ['status' => true , 'redirect' => $redirectData , 'log_data' => $data];
 
-//        }catch (\Exception $e){
-//
-//            DB::rollBack();
-//            if ($throw) throw $e;
-//        }
+        }catch(\Exception $e){
+            throw $e;
+        }
     }
 
     public function getTranslationsfromData($instance, $lang)

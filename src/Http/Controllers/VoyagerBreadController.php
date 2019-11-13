@@ -796,19 +796,26 @@ class VoyagerBreadController extends Controller
 
             $data = json_decode($request->post('data'));
 
-            $dataTable = Voyager::model('DataTable')->find($request->post('table_id'))->first();
+            $dataTable = Voyager::model('DataTable')->where('id',$request->post('table_id'))->first();
 
             $browseRows = $dataTable->browseRows->where('details.nesthead','>',-1);
 
-            $exceptGroupRows = $browseRows->whereNotIn('field',$dataTable->groupRows->pluck('details.column')->toArray())->groupBy('details.nesthead')->sortKeys();
+            $hiddenFields = Voyager::model('DataTable')->hiddenFields;
+            $groupRows = $dataTable->groupRows->pluck('details.column')->toArray();
 
-            $exceptGroupRows->map(function ($columns)use(&$data){
-                $columns->map(function ($column) use(&$data){
+            $data  = collect($data)->whereNotIn('field',$hiddenFields)->whereNotIn('field',$groupRows);
+
+
+            $data->map(function ($field) use($browseRows,&$array){
+                $column = $browseRows->where('field',$field->field)->first()
+                    ??$browseRows->where('details.column',$field->field)->first()
+                    ??false;
+                if ($column){
                     $details = $column->details;
-                    $details->width = current($data)->width;
+                    $details->width = $field->width;
                     Voyager::model('DataTableRows')->where('id', $column->id)->update(['details' => json_encode($details)]);
-                    next($data);
-                });
+                }
+                return true;
             });
             DB::commit();
 
