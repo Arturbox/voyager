@@ -129,9 +129,11 @@ class VoyagerBaseController extends Controller
         // Check if a default search key is set
         $defaultSearchKey = isset($dataType->default_search_key) ? $dataType->default_search_key : null;
 
-        if( isset($dataType->details->redirect) && $dataType->child_redirect > 0 ){
-            Voyager::addAction(ChildRedirectEditAction::class);
-            Voyager::addAction(ChildRedirectShowAction::class);
+        if( isset($dataType->details->redirect) && is_array($dataType->details->redirect) && $dataType->child_redirect > 0 ){
+            foreach ($dataType->details->redirect as $redirectTable){
+                Voyager::addAction(ChildRedirectEditAction::class,$redirectTable);
+                Voyager::addAction(ChildRedirectShowAction::class);
+            }
             Voyager::removeAction(ViewAction::class);
             Voyager::removeAction(EditAction::class);
         }
@@ -790,13 +792,13 @@ class VoyagerBaseController extends Controller
         return redirect()->route("voyager.{$dataType->slug}.index")->with($data);
     }
 
-    public function redirect(Request $request,$id)
+    public function redirect(Request $request,$id,$parentTable,$action)
     {
         try{
-            $redirect = Voyager::model('DataType')->whereName($request->table)->pluck('details')->pluck('redirect')->first();
+            $redirect = $this->getSlug($request);
             Session::forget($redirect);
-            $sessionData = ['tables' => [$request->table => $id]];
-            Session::put('smart-type',$request->post('type'));
+            $sessionData = ['tables' => [$parentTable => $id]];
+            Session::put('smart-type',$action);
             Session::put($redirect,(object)$sessionData);
 
             return redirect(route("voyager.".$redirect.".index"));

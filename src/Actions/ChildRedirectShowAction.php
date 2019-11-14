@@ -11,7 +11,7 @@ class ChildRedirectShowAction extends AbstractAction
 
     public function getIcon()
     {
-        return 'voyager-eye';
+        return $this->dataType->icon_class;
     }
 
     public function getPolicy()
@@ -36,6 +36,6 @@ class ChildRedirectShowAction extends AbstractAction
 
     public function getDefaultRoute()
     {
-        return 'javascript:;';
+        return route('voyager.'.$this->dataType->slug.'.redirect',['id'=>$this->data->id,'parent'=>$this->dataType->redirectParent,'type'=>$this->getPolicy()]);
     }
 }

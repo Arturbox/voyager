@@ -174,9 +174,9 @@ class Voyager
         });
     }
 
-    public function addAction($action)
+    public function addAction($action,$redirectTable = false)
     {
-        array_push($this->actions, $action);
+        array_push($this->actions, $redirectTable?[$action=>$redirectTable]:$action);
     }
 
     public function removeAction($action)
