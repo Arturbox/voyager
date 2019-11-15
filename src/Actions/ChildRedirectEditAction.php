@@ -11,7 +11,7 @@ class ChildRedirectEditAction extends AbstractAction
 
     public function getIcon()
     {
-        return $this->dataType->icon_class;
+        return  $this->dataType->icon;
     }
 
     public function getPolicy()

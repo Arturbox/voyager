@@ -132,7 +132,7 @@ class VoyagerBaseController extends Controller
         if( isset($dataType->details->redirect) && is_array($dataType->details->redirect) && $dataType->child_redirect > 0 ){
             foreach ($dataType->details->redirect as $redirectTable){
                 Voyager::addAction(ChildRedirectEditAction::class,$redirectTable);
-                Voyager::addAction(ChildRedirectShowAction::class);
+                Voyager::addAction(ChildRedirectShowAction::class,$redirectTable);
             }
             Voyager::removeAction(ViewAction::class);
             Voyager::removeAction(EditAction::class);
