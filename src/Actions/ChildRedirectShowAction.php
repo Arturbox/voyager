@@ -6,7 +6,7 @@ class ChildRedirectShowAction extends AbstractAction
 {
     public function getTitle()
     {
-        return __('voyager::generic.child_redirect');
+        return $this->dataType->translate(App()->getLocale())->display_name_singular;
     }
 
     public function getIcon()
