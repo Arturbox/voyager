@@ -54,7 +54,7 @@ class VoyagerBaseController extends Controller
 
         $search = (object) ['value' => $request->get('s'), 'key' => $request->get('key'), 'filter' => $request->get('filter')];
 
-        $dataFilters = Voyager::model('DataFilter')->where('data_type_id', $dataType->id )->where('parent_id','=',null)->orderBy('order')->get();
+        $dataFilters = Voyager::model('DataFilter')->where('data_type_parent_id', $dataType->id )->where('parent_id','=',null)->orderBy('order')->get();
 
         $searchable = $dataType->server_side ? array_keys(SchemaManager::describeTable(app($dataType->model_name)->getTable())->toArray()) : '';
         $orderBy = $request->get('order_by', $dataType->order_column);
@@ -105,20 +105,20 @@ class VoyagerBaseController extends Controller
             $model = false;
         }
 
+
+        //Check if there are some fields in session for preview
+        if (Session::has($slug))
+            $dataTypeContent = DataFilter::getRelationData($slug,Session::get($slug),$dataTypeContent);
+        //Check if there is a filtered fields
+        elseif (isset($selectFilter)  && $selectFilter->type=='selectFilter'  && count($selectFilter->tables)>0)
+            $dataTypeContent = DataFilter::getRelationData($slug,$selectFilter, $dataTypeContent);
+
         // Check if BREAD is Translatable
         if (($isModelTranslatable = is_bread_translatable($model))) {
             $dataType->load('translations');
             $dataTypeContent->load('translations');
             //$dataType = $dataType->translate(App()->getLocale());
         }
-
-
-        //Check if there are some fields in session for preview
-        if (Session::has($slug))
-            $dataTypeContent = DataFilter::relatedDataFiltering(Session::get($slug), $dataTypeContent,$slug);
-        //Check if there is a filtered fields
-        elseif (isset($selectFilter)  && $selectFilter->type  && count($selectFilter->tables)>0)
-            $dataTypeContent = DataFilter::relatedDataFiltering($selectFilter, $dataTypeContent);
 
         // Check if server side pagination is enabled
         $isServerSide = isset($dataType->server_side) && $dataType->server_side;

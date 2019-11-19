@@ -60,6 +60,9 @@ class DataFilter extends Model
         return $this->belongsTo(self::class, 'parent_id');
     }
 
+    public function getDataType(){
+        return $this->belongsTo(Voyager::modelClass('DataType'), 'data_type_id');
+    }
 
     /**
      * Build the URL to sort data type by this field.
@@ -108,18 +111,21 @@ class DataFilter extends Model
         return true;
     }
 
-    public static function relatedDataFiltering($select,$dataTypeContent,$slug = null)
+    public static function getRelationData($slug,$relationSlugs,$dataTypeContent,$aaa = false)
     {
-        foreach ($select->tables as $k => $value){
-            if (isset($select->type))
-                $dataFilterSelected = Voyager::model('DataFilter')->where('id', '=', $k)->first();
-            else
-                $dataFilterSelected = Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship')->where('details.table',$k)->first();
-            if ($dataFilterSelected->details->type == "belongsToMany"){
+        $dataType = Voyager::model('DataType')->where('slug',$slug)->first();
+        foreach ($relationSlugs->tables as $k => $value){
+            $dataTypeRelation = Voyager::model('DataType')->where('slug',$k)->first();
+
+            $field = $dataType->rows->where('type','relationship')->where('details.table',$k)->first();
+
+            if (!$field) continue;
+
+            if ($field->details->type == "belongsToMany"){
                 foreach ($dataTypeContent as $key => &$data){
-                    if ($data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()){
-                        $relationKey = $data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()->pivot->getRelatedKey();
-                        if (!$data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->where($relationKey,'=',$value)->get()->count()) {
+                    if ($data->belongsToMany($field->details->model,$field->details->pivot_table)->first()){
+                        $relationKey = $data->belongsToMany($field->details->model,$field->details->pivot_table)->first()->pivot->getRelatedKey();
+                        if (!$data->belongsToMany($field->details->model,$field->details->pivot_table)->where($relationKey,'=',$value)->get()->count()) {
                             unset($dataTypeContent[$key]);
                         }
                     } else {
@@ -127,23 +133,23 @@ class DataFilter extends Model
                     }
                 }
             }
-            elseif ($dataFilterSelected->details->type == "belongsTo"){
+            elseif ($field->details->type == "belongsTo"){
                 foreach ($dataTypeContent as $key => &$data){
-                    if ($data->{$dataFilterSelected->details->column} != $value){
+                    if ($data->{$field->details->column} != $value){
                         unset($dataTypeContent[$key]);
                     }
                 }
             }
-            elseif ($dataFilterSelected->details->type == "hasOne"){
+            elseif ($field->details->type == "hasOne"){
                 foreach ($dataTypeContent as $key => &$data){
-                    if (!$data->hasOne($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->getKeyName(),$value)->get()->count()){
+                    if (!$data->hasOne($field->details->model,$field->details->column)->where($field->getKeyName(),$value)->get()->count()){
                         unset($dataTypeContent[$key]);
                     }
                 }
             }
-            elseif ($dataFilterSelected->details->type == "hasMany"){
+            elseif ($field->details->type == "hasMany"){
                 foreach ($dataTypeContent as $key => &$data){
-                    if (!$data->hasMany($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->getKeyName(),$value)->get()->count()){
+                    if (!$data->hasMany($field->details->model,$field->details->column)->where($field->getKeyName(),$value)->get()->count()){
                         unset($dataTypeContent[$key]);
                     }
                 }

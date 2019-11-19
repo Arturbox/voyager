@@ -56,6 +56,7 @@ class CreateDataTypesTable extends Migration
         Schema::create('data_filters', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('data_type_id')->unsigned();
+            $table->integer('data_type_parent_id')->unsigned();
             $table->integer('parent_id')->unsigned()->nullable();
             $table->string('display_field');
             $table->string('display_name');
@@ -64,6 +65,8 @@ class CreateDataTypesTable extends Migration
             $table->integer('order');
 
             $table->foreign('data_type_id')->references('id')->on('data_types')
+                ->onUpdate('cascade')->onDelete('cascade');
+            $table->foreign('data_type_parent_id')->references('id')->on('data_types')
                 ->onUpdate('cascade')->onDelete('cascade');
         });
 
