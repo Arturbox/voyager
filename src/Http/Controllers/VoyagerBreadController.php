@@ -426,15 +426,15 @@ class VoyagerBreadController extends Controller
             DB::beginTransaction();
 
             // Build the relationship details
-            $Details = json_decode($request->details,true);
-
             $newFilter = new DataFilter();
             $newFilter->data_type_id = $request->data_type_id;
+            $newFilter->data_type_parent_id = $request->data_type_parent_id;
             $newFilter->display_name = $request->display_name;
             $newFilter->display_field = $request->display_field;
-            $newFilter->details = $Details;
-            $newFilter->order = intval(Voyager::model('DataFilter')->lastFilter()) + 1;
             $newFilter->parent_id = $request->parent_id??$request->parent_id=null;
+            $newFilter->order = intval(Voyager::model('DataFilter')
+                    ->where('data_type_parent_id',$newFilter->data_type_parent_id)
+                    ->where('parent_id',$newFilter->parent_id)->get()->max('order')) + 1;
             if (!$newFilter->save()) {
                 return back()->with([
                     'message'    => 'Error saving new filter for '.$request->display_name,
