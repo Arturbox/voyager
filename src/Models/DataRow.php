@@ -3,6 +3,7 @@
 namespace TCG\Voyager\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use TCG\Voyager\Facades\Voyager;
 use TCG\Voyager\Traits\Translatable;
 
 class DataRow extends Model
@@ -75,10 +76,16 @@ class DataRow extends Model
 
     public function recursiveDataFilters($groupData){
         return $groupData->filter(function ($value){
-            if ($value->details->table != $this->details->table)
+            if ($value->data_type_id != $this->getRelationDataType()->id)
                 return $this->recursiveDataFilters($value->children()->get());
             $this->filter = $value;
             return $value;
         });
     }
+
+    public function getRelationDataType(){
+        return Voyager::model('DataType')->where('name', $this->details->table)->first();
+    }
+
+
 }
