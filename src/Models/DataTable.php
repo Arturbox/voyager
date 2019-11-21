@@ -451,7 +451,7 @@ class DataTable extends Model
                     $slugBind = $column->details->row_info->relationshipTable;
 
                     $select = (object)['tables' => [$slugBind => $data->{$column->details->row_info->relationshipField}]];
-                    if ($result = DataFilter::getRelationData($slug,$select, $dataTypeContent,true)->first())
+                    if ($result = DataFilter::getRelationData($slug,$select, $dataTypeContent)->first())
                         return [$column->field=>$result->translate(App()->getLocale())->{$column->details->row_info->column}];
                     else
                         return [$column->field=>''];

@@ -246,7 +246,7 @@ class VoyagerBaseController extends Controller
 
         $dataType = Voyager::model('DataType')->where('slug', '=', $slug)->first();
 
-        $dataFilters = Voyager::model('DataFilter')->where('data_type_id', $dataType->id )->orderBy('order')->get();
+        $dataFilters = Voyager::model('DataFilter')->where('data_type_parent_id', $dataType->id )->where('parent_id','=',null)->orderBy('order')->get();
 
         $dataTypeContent = (strlen($dataType->model_name) != 0)
             ? app($dataType->model_name)->findOrFail($id)
@@ -345,7 +345,7 @@ class VoyagerBaseController extends Controller
         $dataType = Voyager::model('DataType')->where('slug', '=', $slug)->first();
 
         //Get data filters
-        $dataFilters = Voyager::model('DataFilter')->where('data_type_id', $dataType->id )->orderBy('order')->get();
+        $dataFilters = Voyager::model('DataFilter')->where('data_type_parent_id', $dataType->id )->where('parent_id','=',null)->orderBy('order')->get();
 
         // Check permission
         $this->authorize('add', app($dataType->model_name));

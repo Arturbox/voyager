@@ -17,6 +17,8 @@ class DataRow extends Model
 
     public $timestamps = false;
 
+    public $filter = false;
+
     public function rowBefore()
     {
         $previous = self::where('data_type_id', '=', $this->data_type_id)->where('order', '=', ($this->order - 1))->first();
@@ -69,5 +71,14 @@ class DataRow extends Model
     public function getDetailsAttribute($value)
     {
         return json_decode(!empty($value) ? $value : '{}');
+    }
+
+    public function recursiveDataFilters($groupData){
+        return $groupData->filter(function ($value){
+            if ($value->details->table != $this->details->table)
+                return $this->recursiveDataFilters($value->children()->get());
+            $this->filter = $value;
+            return $value;
+        });
     }
 }

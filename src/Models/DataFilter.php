@@ -111,7 +111,55 @@ class DataFilter extends Model
         return true;
     }
 
-    public static function getRelationData($slug,$relationSlugs,$dataTypeContent,$aaa = false)
+
+//    public static function relatedDataFiltering($select,$dataTypeContent,$slug = null,$aaa = false)
+//    {
+//        foreach ($select->tables as $k => $value){
+//            if (isset($select->type))
+//                $dataFilterSelected = Voyager::model('DataFilter')->where('id', '=', $k)->first();
+//            else
+//                $dataFilterSelected = Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship')->where('details.table',$k)->first();
+//
+//            if ($aaa)
+//                dd(Voyager::model('DataType')->where('slug',$slug)->first()->rows->where('type','relationship'));
+//            if ($dataFilterSelected->details->type == "belongsToMany"){
+//                foreach ($dataTypeContent as $key => &$data){
+//                    if ($data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()){
+//                        $relationKey = $data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->first()->pivot->getRelatedKey();
+//                        if (!$data->belongsToMany($dataFilterSelected->details->model,$dataFilterSelected->details->pivot_table)->where($relationKey,'=',$value)->get()->count()) {
+//                            unset($dataTypeContent[$key]);
+//                        }
+//                    } else {
+//                        unset($dataTypeContent[$key]);
+//                    }
+//                }
+//            }
+//            elseif ($dataFilterSelected->details->type == "belongsTo"){
+//                foreach ($dataTypeContent as $key => &$data){
+//                    if ($data->{$dataFilterSelected->details->column} != $value){
+//                        unset($dataTypeContent[$key]);
+//                    }
+//                }
+//            }
+//            elseif ($dataFilterSelected->details->type == "hasOne"){
+//                foreach ($dataTypeContent as $key => &$data){
+//                    if (!$data->hasOne($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->getKeyName(),$value)->get()->count()){
+//                        unset($dataTypeContent[$key]);
+//                    }
+//                }
+//            }
+//            elseif ($dataFilterSelected->details->type == "hasMany"){
+//                foreach ($dataTypeContent as $key => &$data){
+//                    if (!$data->hasMany($dataFilterSelected->details->model,$dataFilterSelected->details->column)->where($dataFilterSelected->getKeyName(),$value)->get()->count()){
+//                        unset($dataTypeContent[$key]);
+//                    }
+//                }
+//            }
+//        }
+//        return $dataTypeContent;
+//    }
+
+    public static function getRelationData($slug,$relationSlugs,$dataTypeContent)
     {
         $dataType = Voyager::model('DataType')->where('slug',$slug)->first();
         foreach ($relationSlugs->tables as $k => $value){
@@ -158,5 +206,31 @@ class DataFilter extends Model
         return $dataTypeContent;
     }
 
-
+//    public static function getRelationQuery($slug,$relationSlugs,$query)
+//    {
+//        $dataType = Voyager::model('DataType')->where('slug',$slug)->first();
+//        foreach ($relationSlugs as $k => $value){
+//            $relationField = $dataType->rows->where('type','relationship')->where('details.table',$k)->first();
+//
+//            $dataTypeRelation = Voyager::model('DataType')->where('slug',$k)->first();
+//
+//            if ($relationField->details->type == "belongsToMany"){
+//                return $query->belongsToMany($dataTypeRelation->model_name,$relationField->details->pivot_table,$relationField->details->column)->where($relationField->details->column,$value);
+//            }
+//            elseif ($relationField->details->type == "belongsTo"){
+//                dd($query);
+//                return $query
+//                    ->join('contacts', 'users.id', '=', 'contacts.user_id')
+//                    ->select('users.*');
+//                return $query->belongsTo($dataTypeRelation->model_name,$relationField->details->column)->where($relationField->details->column,$value);
+//            }
+//            elseif ($relationField->details->type == "hasOne"){
+//                return $query->hasOne($dataTypeRelation->model_name,$relationField->details->column)->where($relationField->details->column,$value);
+//            }
+//            elseif ($relationField->details->type == "hasMany"){
+//                return $query->hasOne($dataTypeRelation->model_name,$relationField->details->column)->where($relationField->details->column,$value);
+//            }
+//        }
+//        return $dataTypeContent;
+//    }
 }
