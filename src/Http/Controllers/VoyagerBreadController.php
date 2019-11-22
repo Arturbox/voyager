@@ -182,8 +182,6 @@ class VoyagerBreadController extends Controller
         try {
             $dataType = Voyager::model('DataType')->find($id);
 
-            $dataRows = Voyager::model('DataRow')->where('data_type_id',$id)->get();
-
             // Prepare Translations and Transform data
             $translations = is_bread_translatable($dataType)
                 ? $dataType->prepareTranslations($request)
@@ -200,24 +198,6 @@ class VoyagerBreadController extends Controller
 
             // Save translations if applied
             $dataType->saveTranslations($translations);
-
-            foreach ($dataRows as $row){
-                foreach ($row->getTranslatableAttributes() as $attribute) {
-                    $request->request->add([ $attribute => $request->{'field_'.$attribute.'_'.$row->field} ]);
-                    $request->request->add([ $attribute.'_i18n' => $request->{'field_'.$attribute.'_'.$row->field.'_i18n'} ]);
-                }
-                $translationsRow = is_bread_translatable($row)
-                    ? $row->prepareTranslations($request)
-                    : [];
-                $row->saveTranslations($translationsRow);
-                unset($request->{'field_'.$attribute.'_'.$row->field});
-                unset($request->{'field_'.$attribute.'_'.$row->field.'_i18n'});
-            }
-//            activity($dataType->name)
-//                ->performedOn($dataType)
-//                ->causedBy(\Auth::user())
-//                ->withProperties($request->all())
-//                ->log($request->getMethod());
 
             return redirect()->route('voyager.bread.index')->with($data);
         } catch (Exception $e) {

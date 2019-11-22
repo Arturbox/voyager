@@ -293,7 +293,7 @@ class VoyagerDatabaseController extends Controller
             SchemaManager::dropTable($table);
             event(new TableDeleted($table));
 
-            clear_migration_after_table_delete(getAllMigrations(),$table);
+//            clear_migration_after_table_delete(getAllMigrations(),$table);
 
             clear_model_after_table_delete(getAllModels(),$table);
 

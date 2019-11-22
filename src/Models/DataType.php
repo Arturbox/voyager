@@ -3,6 +3,7 @@
 namespace TCG\Voyager\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use TCG\Voyager\Database\Schema\SchemaManager;
 use TCG\Voyager\Facades\Voyager;
@@ -158,6 +159,18 @@ class DataType extends Model
                     if (!$dataRow->save()) {
                         throw new \Exception(__('voyager::database.field_safe_failed', ['field' => $field]));
                     }
+
+                    $request = new Request();
+                    $request->setMethod('POST');
+                    foreach ($dataRow->getTranslatableAttributes() as $attribute) {
+                        $request->request->add([ $attribute => $requestData['field_'.$attribute.'_'.$dataRow->field]??'' ]);
+                        $request->request->add([ $attribute.'_i18n' => $requestData['field_'.$attribute.'_'.$dataRow->field.'_i18n']??json_encode((object)array_map(function ($value){return '';
+                            },array_flip(config('voyager.multilingual.locales')))) ]);
+                    }
+                    $translationsRow = is_bread_translatable($dataRow)
+                        ? $dataRow->prepareTranslations($request)
+                        : [];
+                    $dataRow->saveTranslations($translationsRow);
                 }
 
                 // Clean data_rows that don't have an associated field
