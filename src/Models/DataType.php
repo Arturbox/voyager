@@ -153,7 +153,7 @@ class DataType extends Model
                     $dataRow->field = $requestData['field_'.$field];
                     $dataRow->type = $requestData['field_input_type_'.$field];
                     $dataRow->details = json_decode($requestData['field_details_'.$field]);
-                    $dataRow->display_name = $requestData['field_display_name_'.$field];
+                    $dataRow->display_name = $requestData['field_display_name_'.$field]??'';
                     $dataRow->order = intval($requestData['field_order_'.$field]);
 
                     if (!$dataRow->save()) {
