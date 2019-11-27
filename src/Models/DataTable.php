@@ -35,6 +35,10 @@ class DataTable extends Model
         return $this->hasMany(Voyager::modelClass('DataTableRows'))->orderBy('order');
     }
 
+    public function relationColumns(){
+        return $this->columns()->where('type','relationship');
+    }
+
     public function exceptGroupColumns(){
         return $this->columns()->where('type','<>', 'groupBy');
     }
@@ -521,80 +525,104 @@ class DataTable extends Model
     public function saveSmartData($data)
     {
         try{
-        DB::beginTransaction();
-        $redirectData = false;
+            DB::beginTransaction();
+            $redirectData = false;
+            $filterTables = false;
 
-        $model = $this->dataType->model_name;
+            $model = $this->dataType->model_name;
 
-        // Checking for redirected table data
-        if(isset($data['redirect_table'])){
-            $redirectTableColumn = $this->dataType->rows->where('type','relationship')->where('details.table',array_key_first($data['redirect_table']))->first()->details->column;
-            $redirectData        = [$redirectTableColumn => $data['redirect_table'][array_key_first($data['redirect_table'])]];
-        }
-
-        // Grabbing id-s from all rows of db table
-        $oldFields = $model::query()->when($redirectData,function ($query) use($redirectData){
-            return $query->where($redirectData);
-        })->pluck('id')->toArray();
-
-        $translatable = is_bread_translatable(app($model));
-
-        for ($i = 0 ; $i < (isset($data['data']) ? count($data['data']):0) ; $i++) {
-
-            //Get the row if exist or create a new one
-            $id = $data['data'][$i]['id'];
-            $instance = app($model);
-            if ($id){
-                $instance = app($model)->withTrashed()->where('id',$id)->first();
+            // Checking for redirected table data
+            if(isset($data['redirect_table'])){
+                $redirectTableColumn = $this->dataType->rows->where('type','relationship')->where('details.table',array_key_first($data['redirect_table']))->first()->details->column;
+                $redirectData        = [$redirectTableColumn => $data['redirect_table'][array_key_first($data['redirect_table'])]];
             }
 
-            // Remove updated from $oldFields id list
-            if( ($key = array_search($id, $oldFields)) !== false )
-                unset($oldFields[$key]);
-
-            // Filtrum enq, vercnum enq miayn ayn fieldery voronq bazayi tvyal table-um en pahvum
-            $keys = array_diff(Schema::getColumnListing($this->dataType->slug), ['id']);
-            $save_data = array_filter($data['data'][$i], function ($key) use ($keys) {
-                return in_array($key, $keys);
-            }, ARRAY_FILTER_USE_KEY);
-
-            // Correction of data for saving
-            if (!empty($redirectData))
-                $save_data = array_merge($save_data, $redirectData);
-            $save_data['order'] = $i+1;
-            $save_data['deleted_at'] = null;
-
-
-            // Get translatable fields and translations for row
-            if ($translatable){
-                $transFields = isset($data['data'][$i]['lang']) ? $data['data'][$i]['lang'] : $this->saveWithoutTranslatable( $instance);
-
-                if (!isset($data['data'][$i]['lang']))
-                    $transFields = $this->updateTranslatabeFields($transFields,$save_data);
-
-                $translations = $this->getTranslationsfromData($instance, $transFields);
-
-                $data['data'][$i]['lang'] = $transFields;
-
-                $save_data = $this->updateSaveData($instance,$transFields,$save_data);
-
+            if($data['show_filters'] && isset($data['filter_params']['type'])){
+                if (isset($data['filter_params']['type']))
+                    unset($data['filter_params']['type']);
+                $filterTables = $data['filter_params'];
             }
-            $this->saveWithoutFillable($instance, $save_data);
+            // Grabbing id-s from all rows of db table
+            $oldRecords = $model::query()
+                ->when($redirectData,function ($query) use($redirectData){
+                    return $query->where($redirectData);
+                })
+                ->when((is_array($filterTables) && count($filterTables)) ,function ($query) use(&$filterTables){
+                    foreach ($filterTables as $table=>&$value){
+                        if ($relationField = $this->relationColumns->where('details.slug',$table)->first()){
+                            if (isset($relationField->details->column) && $relationField->details->column){
+                                $query = $query->where($relationField->details->column,$value);
+                                $filterTables[$relationField->details->column] = $value;
+                                unset($filterTables[$table]);
+                            }
+                        }
+                    }
+                    return $query;
+                })
+                ->pluck('id')->toArray();
 
-            $instance->save();
+            $translatable = is_bread_translatable(app($model));
 
-            if ( $translatable && isset($translations) && $translations) $instance->saveTranslations($translations);
+            for ($i = 0 ; $i < (isset($data['data']) ? count($data['data']):0) ; $i++) {
+
+                //Get the row if exist or create a new one
+                $id = $data['data'][$i]['id'];
+                $instance = app($model);
+                if ($id){
+                    $instance = app($model)->withTrashed()->where('id',$id)->first();
+                }
+
+                // Remove updated from $oldRecords id list
+                if( ($key = array_search($id, $oldRecords)) !== false )
+                    unset($oldRecords[$key]);
+
+                // Filtrum enq, vercnum enq miayn ayn fieldery voronq bazayi tvyal table-um en pahvum
+                $keys = array_diff(Schema::getColumnListing($this->dataType->slug), ['id']);
+                $save_data = array_filter($data['data'][$i], function ($key) use ($keys) {
+                    return in_array($key, $keys);
+                }, ARRAY_FILTER_USE_KEY);
+
+                // Correction of data for saving
+
+                if (!empty($redirectData))
+                    $save_data = array_merge($save_data, $redirectData);
+                if ($filterTables)
+                    $save_data = array_merge($save_data, $filterTables);
+
+                $save_data['order'] = $i+1;
+                $save_data['deleted_at'] = null;
 
 
-            // Preparing data for activity log
-            $data['data'][$i] = isset($data['data'][$i]['lang'])? array_merge($instance->toArray(),['lang' => $data['data'][$i]['lang']]):$instance->toArray();
-        }
+                // Get translatable fields and translations for row
+                if ($translatable){
+                    $transFields = isset($data['data'][$i]['lang']) ? $data['data'][$i]['lang'] : $this->saveWithoutTranslatable( $instance);
 
-        if(!empty($oldFields)) $model::whereIn('id', $oldFields)->delete();
+                    if (!isset($data['data'][$i]['lang']))
+                        $transFields = $this->updateTranslatabeFields($transFields,$save_data);
 
-        DB::commit();
+                    $translations = $this->getTranslationsfromData($instance, $transFields);
 
-        return ['status' => true , 'redirect' => $redirectData , 'log_data' => $data];
+                    $data['data'][$i]['lang'] = $transFields;
+
+                    $save_data = $this->updateSaveData($instance,$transFields,$save_data);
+
+                }
+                $this->saveWithoutFillable($instance, $save_data);
+
+                $instance->save();
+
+                if ( $translatable && isset($translations) && $translations) $instance->saveTranslations($translations);
+
+
+                // Preparing data for activity log
+                $data['data'][$i] = isset($data['data'][$i]['lang'])? array_merge($instance->toArray(),['lang' => $data['data'][$i]['lang']]):$instance->toArray();
+            }
+
+            if(!empty($oldRecords)) $model::whereIn('id', $oldRecords)->delete();
+
+            DB::commit();
+
+            return ['status' => true , 'redirect' => $redirectData , 'log_data' => $data];
 
         }catch(\Exception $e){
             throw $e;

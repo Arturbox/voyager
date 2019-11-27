@@ -42,6 +42,10 @@ class DataType extends Model
         'details',
     ];
 
+    public function filters(){
+        return $this->hasMany(Voyager::modelClass('DataFilter'),'data_type_parent_id');
+    }
+
     public function tables()
     {
         return $this->hasMany(Voyager::modelClass('DataTable'));
