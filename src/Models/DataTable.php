@@ -265,7 +265,15 @@ class DataTable extends Model
         if ($groups->count()){
             $groupsData = $groups->pluck('details');
             $dataByGroup = collect([]);
-            $this->dataContent->groupBy($groupsData->pluck('column')->toArray())->recursiveGroups($groupsData->toArray(),$this->mergedListRows,$dataByGroup,count($this->hiddenFields));
+            if ($groupsData->pluck('type')->unique()->first() == 'mergeAll'){
+                $firstGroup = $groupsData->get(0);
+                $type = Voyager::model('DataType')->where('slug', '=', $firstGroup->slug)->first();
+                $content = strlen($type->model_name) != 0 ? app($type->model_name)->get() : call_user_func([DB::table($type->name), "get"]);
+                $content->recursiveGroupsList($dataByGroup,$this->dataContent,$this->rowsByContent->pluck(false,'field'),$groupsData->toArray(),[],$this->mergedListRows,count($this->hiddenFields));
+            }
+            else{
+                $this->dataContent->groupBy($groupsData->pluck('column')->toArray())->recursiveGroups($groupsData->toArray(),$this->mergedListRows,$dataByGroup,count($this->hiddenFields));
+            }
             $this->dataContent = $dataByGroup;
             $this->groups = $groupsData->map(function ($group){
                 $dataTypeGroup = Voyager::model('DataType')->where('slug', '=', $group->slug)->first();
